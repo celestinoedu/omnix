@@ -4,7 +4,7 @@
 
 Este documento separa a arquitetura existente da arquitetura-alvo. Componentes planejados não devem ser descritos ao proprietário como já implementados.
 
-## Arquitetura atual — MVP visual
+## Arquitetura atual — MVP visual com fundação de dados
 
 ### Interface
 
@@ -26,14 +26,15 @@ Este documento separa a arquitetura existente da arquitetura-alvo. Componentes p
 
 - Posts de demonstração definidos na interface.
 - Novos agendamentos gravados no `localStorage` do navegador.
-- Nenhum banco de dados.
-- Nenhum armazenamento real de mídia.
-- Nenhuma autenticação própria do OmniX.
+- Cliente Supabase, login por magic link, CRUD de agendamentos e upload privado já implementados no código.
+- Migração SQL versionada em `supabase/migrations/202607250001_initial_schema.sql`.
+- A camada real permanece inativa até o proprietário criar o projeto Supabase, executar a migração e configurar as variáveis públicas.
+- Quando não há configuração Supabase, o aplicativo entra explicitamente em modo demonstração.
 - Nenhum token social.
 
 ### Limitação essencial
 
-O MVP atual é uma demonstração de produto. Fechar o navegador não apaga necessariamente os posts, mas os dados não acompanham o usuário em outro dispositivo e não existe um servidor que execute publicações.
+Na produção atual, o Supabase ainda não está configurado; portanto, o site publicado continua em modo demonstração. Depois da ativação, login, banco e mídia serão reais, mas ainda não haverá publicação social até a implementação dos adaptadores OAuth.
 
 ## Arquitetura-alvo — publicação automática
 
@@ -47,18 +48,20 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
    - Nunca recebe client secrets nem tokens sociais persistentes.
 
 2. **Autenticação**
-   - Supabase Auth no free tier, inicialmente com magic link ou provedor simples.
+   - Supabase Auth no free tier, com magic link por e-mail já implementado.
    - Cada registro de negócio deve pertencer a um `user_id`.
 
 3. **Banco de dados**
    - PostgreSQL do Supabase.
    - Row Level Security ativada.
    - Migrações versionadas no repositório.
+   - Estrutura e políticas iniciais já versionadas, aguardando aplicação no projeto remoto.
 
 4. **Armazenamento de mídia**
    - Supabase Storage no MVP, condicionado aos limites gratuitos.
    - Arquivos privados com URLs assinadas e prazo curto.
    - Política de retenção para remover mídias antigas quando seguro.
+   - Bucket privado e limite de 50 MB definidos na migração inicial.
 
 5. **Backend e OAuth**
    - Rotas server-side no ambiente Cloudflare/Vinext ou Workers dedicados.
@@ -99,13 +102,21 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
 - `platform`
 - `platform_account_id`
 - `display_name`
-- `encrypted_access_token`
-- `encrypted_refresh_token`
 - `token_expires_at`
 - `scopes`
 - `status`
 - `created_at`
 - `updated_at`
+
+### `social_credentials`
+
+- `social_account_id`
+- `encrypted_access_token`
+- `encrypted_refresh_token`
+- `encryption_key_version`
+- `updated_at`
+
+Essa tabela não possui políticas para clientes autenticados. Somente o backend privilegiado poderá acessar tokens.
 
 ### `media_assets`
 

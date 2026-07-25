@@ -4,7 +4,7 @@
 
 ## Etapa atual
 
-**Protótipo funcional de interface / pré-backend.**
+**Fundação de backend implementada / aguardando ativação do Supabase.**
 
 ## Implementado
 
@@ -21,6 +21,14 @@
 - Auditoria de dependências sem vulnerabilidades conhecidas na última validação.
 - Guia inicial clique a clique.
 - Memória operacional do projeto em Markdown.
+- Cliente Supabase com detecção segura de configuração.
+- Login sem senha por link enviado ao e-mail.
+- Migração PostgreSQL completa com Row Level Security.
+- Tabelas para perfis, contas sociais, credenciais isoladas, mídias, posts, destinos e tentativas.
+- Bucket privado de mídia com limite gratuito de 50 MB.
+- Salvamento e leitura de agendamentos reais quando o Supabase estiver configurado.
+- Upload privado com compensação em caso de falha no registro.
+- Fallback explícito para modo demonstração.
 
 ## Simulado
 
@@ -32,10 +40,9 @@
 
 ## Ainda não implementado
 
-- Cadastro e login próprios.
-- Banco de dados.
-- Sincronização entre dispositivos.
-- Upload e armazenamento real de mídia.
+- Ativação do projeto Supabase remoto e aplicação da migração.
+- Configuração das variáveis Supabase no localhost e na produção.
+- Teste ponta a ponta do login, sincronização e upload contra o Supabase remoto.
 - OAuth real de Meta/Instagram.
 - OAuth real de TikTok.
 - OAuth real de Google/YouTube.
@@ -55,22 +62,22 @@
 
 ## Próximo marco recomendado
 
-Transformar o protótipo em um MVP com dados reais, sem integrar todas as redes de uma vez:
+Ativar e validar a fundação já implementada:
 
-1. Criar projeto gratuito no Supabase.
-2. Implementar login.
-3. Criar banco com Row Level Security.
-4. Salvar agendamentos no banco.
-5. Implementar upload privado de mídia e limites de tamanho.
-6. Configurar fuso horário.
-7. Integrar primeiro o YouTube ou Instagram, conforme a conta disponível para testes.
-8. Implementar o worker de publicação idempotente.
-9. Validar o fluxo completo antes de adicionar as demais redes.
+1. Proprietário cria o projeto gratuito no Supabase.
+2. Proprietário executa a migração pelo SQL Editor.
+3. Configurar URL e chave publicável no localhost e no Sites.
+4. Testar magic link, salvamento, sincronização e upload.
+5. Configurar fuso horário na interface.
+6. Integrar primeiro o YouTube, por oferecer um fluxo de upload oficial bem documentado.
+7. Implementar o worker de publicação idempotente.
+8. Validar o fluxo completo antes de adicionar Instagram e TikTok.
 
 ## Validação mais recente
 
 - `npm run build`: aprovado.
 - `npm audit --audit-level=high`: zero vulnerabilidades encontradas.
+- Teste em navegador: dashboard e modal de criação aprovados em modo demonstração.
 - Deploy privado da versão 3: concluído.
 - URL: `https://omnix-social.ecarvalho95.chatgpt.site`.
 

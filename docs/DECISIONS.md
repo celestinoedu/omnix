@@ -47,10 +47,10 @@ Este registro é cumulativo. Decisões antigas não devem ser apagadas; quando s
 ## D-006 — Backend proposto com Supabase e Cloudflare
 
 - Data: 25/07/2026
-- Estado: Proposta, ainda não implementada
-- Decisão proposta: usar Supabase para autenticação, PostgreSQL e arquivos; usar Cloudflare/Vinext ou Workers para backend e agendamento.
+- Estado: Aceita, implementação parcial
+- Decisão: usar Supabase para autenticação, PostgreSQL e arquivos; usar Cloudflare/Vinext ou Workers para backend e agendamento.
 - Motivo: disponibilidade de free tiers e baixo custo operacional inicial.
-- Consequência: os limites vigentes devem ser verificados antes da adoção; a escolha final pode mudar sem migração, pois ainda não há dados reais.
+- Consequência: login, esquema e upload já estão no código; ativação depende da criação do projeto gratuito. Limites registrados: 500 MB de banco, 1 GB de arquivos, 5 GB de egress e 50 MB por upload no plano gratuito consultado em 25/07/2026.
 
 ## D-007 — Documentação como memória operacional
 
@@ -59,3 +59,19 @@ Este registro é cumulativo. Decisões antigas não devem ser apagadas; quando s
 - Decisão: manter contexto, premissas, arquitetura, decisões e estado em documentos dedicados, com `AGENTS.md` como índice obrigatório.
 - Motivo: preservar continuidade e qualidade entre sessões.
 - Consequência: mudanças materiais só estão concluídas quando a documentação correspondente também estiver atualizada.
+
+## D-008 — Separação física de tokens sociais
+
+- Data: 25/07/2026
+- Estado: Aceita
+- Decisão: armazenar metadados das contas em `social_accounts` e tokens cifrados em `social_credentials`.
+- Motivo: impedir que uma consulta feita pelo navegador alcance tokens, mesmo quando os registros pertencem ao usuário autenticado.
+- Consequência: `social_credentials` não possui política RLS para clientes e será acessada somente pelo backend privilegiado.
+
+## D-009 — Modo demonstração como fallback explícito
+
+- Data: 25/07/2026
+- Estado: Aceita
+- Decisão: manter o comportamento local existente quando as variáveis Supabase não estiverem configuradas.
+- Motivo: preservar o protótipo aprovado enquanto a infraestrutura gratuita é ativada.
+- Consequência: a interface mostra “Modo demonstração”; depois da configuração, exige login e usa dados reais.
