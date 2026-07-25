@@ -29,13 +29,13 @@ Este documento separa a arquitetura existente da arquitetura-alvo. Componentes p
 - Cliente Supabase, login por magic link, CRUD de agendamentos e upload privado já implementados no código.
 - Migração SQL versionada em `supabase/migrations/202607250001_initial_schema.sql`.
 - Projeto Supabase gratuito criado e migração inicial aplicada em 25/07/2026.
-- Variáveis públicas configuradas no localhost e no ambiente Sites; a próxima versão de produção ativará a camada real.
+- Variáveis públicas configuradas no localhost e no ambiente Sites; a versão 4 de produção ativou a camada real.
 - Quando não há configuração Supabase, o aplicativo ainda entra explicitamente em modo demonstração.
 - Nenhum token social.
 
 ### Limitação essencial
 
-O localhost já apresenta o login real. A versão de produção precisa ser republicada para receber a nova revisão de ambiente. Mesmo após essa ativação, ainda não haverá publicação social até a implementação dos adaptadores OAuth.
+O localhost e a produção privada já apresentam o login real. Ainda não haverá publicação social até a implementação dos adaptadores OAuth.
 
 ## Arquitetura-alvo — publicação automática
 

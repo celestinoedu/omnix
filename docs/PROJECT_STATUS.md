@@ -4,7 +4,7 @@
 
 ## Etapa atual
 
-**Fundação de backend ativada / aguardando validação do usuário e deploy.**
+**Fundação de backend publicada / aguardando validação do magic link pelo usuário.**
 
 ## Implementado
 
@@ -34,6 +34,7 @@
 - URL e chave publicável configuradas localmente e no ambiente Sites.
 - Endpoint de autenticação validado com resposta HTTP 200.
 - Tela de login real validada no localhost.
+- Versão 4 publicada com a revisão 1 das variáveis Supabase.
 
 ## Simulado
 
@@ -67,13 +68,12 @@
 
 Ativar e validar a fundação já implementada:
 
-1. Publicar a versão com a nova revisão de ambiente.
-2. Proprietário testa o magic link com seu e-mail.
-3. Testar salvamento, sincronização e upload.
-4. Configurar fuso horário na interface.
-5. Integrar primeiro o YouTube, por oferecer um fluxo de upload oficial bem documentado.
-6. Implementar o worker de publicação idempotente.
-7. Validar o fluxo completo antes de adicionar Instagram e TikTok.
+1. Proprietário testa o magic link com seu e-mail.
+2. Testar salvamento, sincronização e upload.
+3. Configurar fuso horário na interface.
+4. Integrar primeiro o YouTube, por oferecer um fluxo de upload oficial bem documentado.
+5. Implementar o worker de publicação idempotente.
+6. Validar o fluxo completo antes de adicionar Instagram e TikTok.
 
 ## Validação mais recente
 
@@ -82,7 +82,7 @@ Ativar e validar a fundação já implementada:
 - Teste em navegador: dashboard e modal de criação aprovados em modo demonstração.
 - Teste em navegador: tela de login Supabase aprovada no localhost.
 - Supabase Auth `/health`: HTTP 200.
-- Deploy privado da versão 3: concluído.
+- Deploy privado da versão 4: concluído com `env_set_revision` 1.
 - URL: `https://omnix-social.ecarvalho95.chatgpt.site`.
 
 ## Regra para a próxima sessão
