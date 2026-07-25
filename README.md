@@ -2,6 +2,10 @@
 
 MVP visual e interativo de um agendador de posts para Instagram, TikTok e YouTube.
 
+## Memória do projeto
+
+Antes de alterar o projeto, leia `AGENTS.md`. Ele aponta para as premissas, arquitetura, decisões e estado atual que devem ser preservados entre sessões.
+
 ## Rodar no computador
 
 1. Instale o Node.js LTS em https://nodejs.org.
