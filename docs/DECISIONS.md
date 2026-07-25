@@ -47,10 +47,10 @@ Este registro é cumulativo. Decisões antigas não devem ser apagadas; quando s
 ## D-006 — Backend proposto com Supabase e Cloudflare
 
 - Data: 25/07/2026
-- Estado: Aceita, implementação parcial
+- Estado: Aceita, fundação ativada
 - Decisão: usar Supabase para autenticação, PostgreSQL e arquivos; usar Cloudflare/Vinext ou Workers para backend e agendamento.
 - Motivo: disponibilidade de free tiers e baixo custo operacional inicial.
-- Consequência: login, esquema e upload já estão no código; ativação depende da criação do projeto gratuito. Limites registrados: 500 MB de banco, 1 GB de arquivos, 5 GB de egress e 50 MB por upload no plano gratuito consultado em 25/07/2026.
+- Consequência: projeto remoto, esquema, login e upload estão configurados. Falta a validação humana do magic link e a publicação da versão com a nova revisão de ambiente. Limites registrados: 500 MB de banco, 1 GB de arquivos, 5 GB de egress e 50 MB por upload no plano gratuito consultado em 25/07/2026.
 
 ## D-007 — Documentação como memória operacional
 

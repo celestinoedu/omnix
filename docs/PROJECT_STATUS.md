@@ -4,7 +4,7 @@
 
 ## Etapa atual
 
-**Fundação de backend implementada / aguardando ativação do Supabase.**
+**Fundação de backend ativada / aguardando validação do usuário e deploy.**
 
 ## Implementado
 
@@ -29,6 +29,11 @@
 - Salvamento e leitura de agendamentos reais quando o Supabase estiver configurado.
 - Upload privado com compensação em caso de falha no registro.
 - Fallback explícito para modo demonstração.
+- Projeto Supabase remoto configurado.
+- Migração inicial aplicada e registrada no histórico remoto.
+- URL e chave publicável configuradas localmente e no ambiente Sites.
+- Endpoint de autenticação validado com resposta HTTP 200.
+- Tela de login real validada no localhost.
 
 ## Simulado
 
@@ -40,8 +45,6 @@
 
 ## Ainda não implementado
 
-- Ativação do projeto Supabase remoto e aplicação da migração.
-- Configuração das variáveis Supabase no localhost e na produção.
 - Teste ponta a ponta do login, sincronização e upload contra o Supabase remoto.
 - OAuth real de Meta/Instagram.
 - OAuth real de TikTok.
@@ -64,20 +67,21 @@
 
 Ativar e validar a fundação já implementada:
 
-1. Proprietário cria o projeto gratuito no Supabase.
-2. Proprietário executa a migração pelo SQL Editor.
-3. Configurar URL e chave publicável no localhost e no Sites.
-4. Testar magic link, salvamento, sincronização e upload.
-5. Configurar fuso horário na interface.
-6. Integrar primeiro o YouTube, por oferecer um fluxo de upload oficial bem documentado.
-7. Implementar o worker de publicação idempotente.
-8. Validar o fluxo completo antes de adicionar Instagram e TikTok.
+1. Publicar a versão com a nova revisão de ambiente.
+2. Proprietário testa o magic link com seu e-mail.
+3. Testar salvamento, sincronização e upload.
+4. Configurar fuso horário na interface.
+5. Integrar primeiro o YouTube, por oferecer um fluxo de upload oficial bem documentado.
+6. Implementar o worker de publicação idempotente.
+7. Validar o fluxo completo antes de adicionar Instagram e TikTok.
 
 ## Validação mais recente
 
 - `npm run build`: aprovado.
 - `npm audit --audit-level=high`: zero vulnerabilidades encontradas.
 - Teste em navegador: dashboard e modal de criação aprovados em modo demonstração.
+- Teste em navegador: tela de login Supabase aprovada no localhost.
+- Supabase Auth `/health`: HTTP 200.
 - Deploy privado da versão 3: concluído.
 - URL: `https://omnix-social.ecarvalho95.chatgpt.site`.
 

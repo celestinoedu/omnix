@@ -3,9 +3,29 @@
 
 create extension if not exists pgcrypto;
 
-create type public.social_platform as enum ('Instagram', 'TikTok', 'YouTube');
-create type public.post_status as enum ('draft', 'scheduled', 'processing', 'published', 'partial_failure', 'failed', 'cancelled');
-create type public.destination_status as enum ('pending', 'processing', 'published', 'failed', 'cancelled');
+do $$
+begin
+  create type public.social_platform as enum ('Instagram', 'TikTok', 'YouTube');
+exception
+  when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+  create type public.post_status as enum ('draft', 'scheduled', 'processing', 'published', 'partial_failure', 'failed', 'cancelled');
+exception
+  when duplicate_object then null;
+end
+$$;
+
+do $$
+begin
+  create type public.destination_status as enum ('pending', 'processing', 'published', 'failed', 'cancelled');
+exception
+  when duplicate_object then null;
+end
+$$;
 
 create table public.profiles (
   id uuid primary key default gen_random_uuid(),
