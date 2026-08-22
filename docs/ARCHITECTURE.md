@@ -42,11 +42,11 @@ Este documento separa a arquitetura existente da arquitetura-alvo. Componentes p
 - `tiktok-publisher`: reivindica posts vencidos, valida consentimentos, envia vídeo, consulta o processamento e atualiza estados.
 - Tokens são cifrados com AES-256-GCM e ficam em `omnix_social_credentials`, sem acesso pelo navegador.
 - A migração `202608220001_tiktok_direct_post.sql` adiciona estados OAuth e a reivindicação transacional da fila.
-- As três Edge Functions estão publicadas no projeto compartilhado. O Supabase Cron ainda precisa ser ativado após cadastrar as credenciais TikTok.
+- As três Edge Functions estão publicadas no projeto compartilhado. O job `omnix-tiktok-publisher` está ativo no Supabase Cron a cada minuto e usa URL e segredo exclusivos armazenados no Vault.
 
 ### Limitação essencial
 
-A integração só ficará operacional após criar o aplicativo no TikTok for Developers, cadastrar `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET`, liberar o usuário proprietário e ativar o Cron. Até a auditoria do TikTok, Direct Post publica apenas com visibilidade `SELF_ONLY`.
+A integração só ficará operacional após criar o aplicativo no TikTok for Developers e cadastrar `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET`. Usuário, funções e Cron já estão ativos. Até a auditoria do TikTok, Direct Post publica apenas com visibilidade `SELF_ONLY`.
 
 ## Arquitetura-alvo — expansão após validar o TikTok
 

@@ -54,6 +54,7 @@
 - Edge Functions `tiktok-auth`, `tiktok-creator-info` e `tiktok-publisher` publicadas no projeto compartilhado.
 - Variáveis públicas locais e do GitHub Actions apontando para o Supabase compartilhado.
 - Segredos exclusivos de criptografia, Cron e URL do OmniX configurados; valores não foram gravados no repositório.
+- Job `omnix-tiktok-publisher` ativo a cada minuto, com URL e segredo armazenados no Vault; chamada autenticada do publicador validada com HTTP 200.
 - Adesão explícita por `omnix_profiles`, sem liberar automaticamente usuários do NexLab.
 - Primeiro proprietário autorizado em `omnix_profiles` e confirmado no ambiente remoto em 22/08/2026.
 - URLs de redirecionamento do Auth atualizadas para o domínio e a recuperação de senha do OmniX, preservando a configuração principal do NexLab.
@@ -67,7 +68,6 @@
 
 ## Implementado, mas ainda não ativado por completo
 
-- Agendador SQL do Cron, que depende do segredo compartilhado com a função.
 - Credenciais `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET`, ainda dependentes do aplicativo TikTok.
 
 ## Ainda não implementado
@@ -94,10 +94,9 @@ Ativar e validar o TikTok já implementado:
 1. Criar o aplicativo no TikTok for Developers e adicionar os produtos exigidos.
 2. Cadastrar `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET` no projeto Supabase compartilhado.
 3. Adicionar a URL do OmniX às Redirect URLs do Auth sem substituir a Site URL do NexLab.
-4. Ativar o job `omnix-tiktok-publisher` no Cron.
-5. Conectar a conta TikTok pelo OmniX.
-6. Agendar um vídeo de teste como `SELF_ONLY` e confirmar o ciclo completo.
-7. Gravar a demonstração e solicitar auditoria do TikTok para publicação pública.
+4. Conectar a conta TikTok pelo OmniX.
+5. Agendar um vídeo de teste como `SELF_ONLY` e confirmar o ciclo completo.
+6. Gravar a demonstração e solicitar auditoria do TikTok para publicação pública.
 
 ## Validação mais recente
 

@@ -102,7 +102,7 @@ Esta etapa usa o terminal apenas para enviar os arquivos ao seu próprio Supabas
 
 Não troque `SOCIAL_TOKEN_ENCRYPTION_KEY` depois de conectar contas, pois os tokens existentes deixariam de ser legíveis.
 
-## Parte 5 — ativar o agendador a cada minuto
+## Parte 5 — agendador a cada minuto (já concluída)
 
 1. No Supabase, volte ao **SQL Editor** e clique em **New query**.
 2. Abra `OmniX/supabase/setup/enable_tiktok_cron.sql` no computador.
@@ -113,6 +113,8 @@ Não troque `SOCIAL_TOKEN_ENCRYPTION_KEY` depois de conectar contas, pois os tok
 7. Feche o editor temporário sem salvar o segredo no repositório.
 8. No menu esquerdo, abra **Integrations** e depois **Cron**.
 9. Confirme que existe `omnix-tiktok-publisher` com frequência `* * * * *`.
+
+O job foi ativado e sua chamada autenticada retornou HTTP 200 em 22/08/2026. Repita esta parte somente se o job for removido ou o segredo precisar ser rotacionado.
 
 ## Parte 6 — preparar o GitHub Pages
 
