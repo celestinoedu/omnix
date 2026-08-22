@@ -21,13 +21,13 @@ export function AuthGate() {
       email,
       options: {
         emailRedirectTo: window.location.origin,
-        shouldCreateUser: true,
+        shouldCreateUser: false,
       },
     });
     setSending(false);
 
     if (authError) {
-      setError("Não foi possível enviar o acesso. Confira o e-mail e tente novamente.");
+      setError("Acesso não liberado para este e-mail. Confira o endereço ou fale com o administrador.");
       return;
     }
 

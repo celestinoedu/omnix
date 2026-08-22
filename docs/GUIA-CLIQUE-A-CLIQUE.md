@@ -38,7 +38,7 @@ Enquanto o TikTok não concluir a auditoria do aplicativo, os vídeos ficam obri
 2. Adicione **Login Kit**.
 3. Abra a configuração para Web.
 4. Em **Redirect URI**, cadastre exatamente:
-   `https://hbhfqfebqtytgmjmqdtr.supabase.co/functions/v1/tiktok-auth/callback`
+   `https://jycpsvlnnmbiwscvgdth.supabase.co/functions/v1/tiktok-auth/callback`
 5. Não acrescente barra no final e não use `http`.
 6. Salve.
 
@@ -59,18 +59,15 @@ Enquanto o TikTok não concluir a auditoria do aplicativo, os vídeos ficam obri
 3. Guarde ambos em um gerenciador de senhas.
 4. Não cole essas credenciais em `.env.local`, Markdown, GitHub Issue ou conversa.
 
-## Parte 2 — aplicar o banco no Supabase
+## Parte 2 — banco no Supabase (já concluída)
 
 1. Abra `https://supabase.com/dashboard`.
-2. Entre no projeto `omnix-social`.
+2. Entre no projeto `nexlab` (`jycpsvlnnmbiwscvgdth`).
 3. No menu esquerdo, clique em **SQL Editor**.
 4. Clique em **New query**.
-5. No computador, abra `OmniX/supabase/migrations/202608220001_tiktok_direct_post.sql`.
-6. Copie todo o conteúdo e cole no editor.
-7. Clique em **Run** uma única vez.
-8. Confirme que aparece sucesso. Se houver erro, pare e copie somente a mensagem do erro; nunca copie chaves.
+5. As migrações do OmniX já foram aplicadas pela CLI em 22/08/2026, preservando o histórico do NexLab. Não execute novamente nem use **Repair migration history**.
 
-## Parte 3 — publicar as Edge Functions
+## Parte 3 — Edge Functions (já concluída)
 
 Esta etapa usa o terminal apenas para enviar os arquivos ao seu próprio Supabase.
 
@@ -78,13 +75,13 @@ Esta etapa usa o terminal apenas para enviar os arquivos ao seu próprio Supabas
 2. Clique com o botão direito em uma área vazia e escolha **Abrir no Terminal**.
 3. Digite `npx supabase login` e pressione Enter.
 4. O navegador abrirá. Autorize a CLI e volte ao terminal.
-5. Digite `npx supabase link --project-ref hbhfqfebqtytgmjmqdtr`.
+5. Digite `npx supabase link --project-ref jycpsvlnnmbiwscvgdth`.
 6. Se pedir a senha do banco, use a senha guardada no gerenciador; não envie a senha na conversa.
 7. Execute, um por vez:
    - `npx supabase functions deploy tiktok-auth`
    - `npx supabase functions deploy tiktok-creator-info`
    - `npx supabase functions deploy tiktok-publisher`
-8. Aguarde a confirmação de sucesso das três funções.
+8. As três funções foram publicadas com sucesso em 22/08/2026; repita somente após alterar o código delas.
 
 ## Parte 4 — criar os segredos das funções
 
@@ -96,17 +93,12 @@ Esta etapa usa o terminal apenas para enviar os arquivos ao seu próprio Supabas
 |---|---|
 | `TIKTOK_CLIENT_KEY` | Client key copiada do TikTok |
 | `TIKTOK_CLIENT_SECRET` | Client secret copiado do TikTok |
-| `OMNIX_APP_URL` | `https://omnix.lotusnegocios.com` |
-| `TIKTOK_APP_AUDITED` | `false` |
+| `OMNIX_APP_URL` | `https://omnix.lotusnegocios.com` (já configurado) |
+| `TIKTOK_APP_AUDITED` | `false` (já configurado) |
 
 ### Gerar os dois valores aleatórios
 
-1. Abra o PowerShell.
-2. Execute `[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`.
-3. Copie o resultado e crie `SOCIAL_TOKEN_ENCRYPTION_KEY` no Supabase.
-4. Execute o mesmo comando novamente para obter outro valor.
-5. Copie o novo resultado e crie `OMNIX_CRON_SECRET`.
-6. Guarde o segundo resultado temporariamente no gerenciador de senhas; ele será usado na próxima parte.
+`SOCIAL_TOKEN_ENCRYPTION_KEY` e `OMNIX_CRON_SECRET` já foram gerados e configurados sem serem expostos no repositório. Como o painel não revela novamente os valores, ao ativar o Cron gere um novo valor para `OMNIX_CRON_SECRET`, atualize o segredo da Edge Function e use o mesmo valor apenas na consulta temporária da próxima parte.
 
 Não troque `SOCIAL_TOKEN_ENCRYPTION_KEY` depois de conectar contas, pois os tokens existentes deixariam de ser legíveis.
 
@@ -115,7 +107,7 @@ Não troque `SOCIAL_TOKEN_ENCRYPTION_KEY` depois de conectar contas, pois os tok
 1. No Supabase, volte ao **SQL Editor** e clique em **New query**.
 2. Abra `OmniX/supabase/setup/enable_tiktok_cron.sql` no computador.
 3. Copie o conteúdo para um editor temporário.
-4. Substitua `https://SEU-PROJETO.supabase.co` por `https://hbhfqfebqtytgmjmqdtr.supabase.co`.
+4. Substitua `https://SEU-PROJETO.supabase.co` por `https://jycpsvlnnmbiwscvgdth.supabase.co`.
 5. Substitua `COLE_AQUI_O_MESMO_OMNIX_CRON_SECRET_DAS_EDGE_FUNCTIONS` pelo valor de `OMNIX_CRON_SECRET`.
 6. Copie o SQL já ajustado, cole no SQL Editor e clique em **Run**.
 7. Feche o editor temporário sem salvar o segredo no repositório.
@@ -136,7 +128,7 @@ Não troque `SOCIAL_TOKEN_ENCRYPTION_KEY` depois de conectar contas, pois os tok
 1. Dentro do repositório, clique em **Settings**.
 2. No menu esquerdo, abra **Secrets and variables** e depois **Actions**.
 3. Em **Repository secrets**, clique em **New repository secret**.
-4. Crie `NEXT_PUBLIC_SUPABASE_URL` com `https://hbhfqfebqtytgmjmqdtr.supabase.co`.
+4. Crie `NEXT_PUBLIC_SUPABASE_URL` com `https://jycpsvlnnmbiwscvgdth.supabase.co`.
 5. Crie `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` com a chave publicável do Supabase. Não use `secret` nem `service_role`.
 6. Em **Variables**, crie `NEXT_PUBLIC_TIKTOK_AUDITED` com `false`.
 
@@ -166,9 +158,26 @@ O domínio raiz já aponta para GitHub Pages e não será alterado.
 
 1. No Supabase, abra **Authentication**.
 2. Clique em **URL Configuration**.
-3. Em **Site URL**, informe `https://omnix.lotusnegocios.com`.
-4. Em **Redirect URLs**, adicione `https://omnix.lotusnegocios.com/**`.
+3. Como o Auth é compartilhado com o NexLab, **não substitua a Site URL existente**.
+4. Em **Redirect URLs**, adicione `https://omnix.lotusnegocios.com/**` e preserve todas as URLs do NexLab.
 5. Salve.
+
+## Parte 8.1 — liberar o usuário no OmniX
+
+Compartilhar o Auth não libera automaticamente os usuários do NexLab. Depois que o e-mail proprietário já existir em **Authentication > Users**:
+
+1. Abra **SQL Editor** e clique em **New query**.
+2. Execute a consulta abaixo, substituindo apenas o e-mail:
+
+```sql
+insert into public.omnix_profiles (user_id, display_name)
+select id, coalesce(raw_user_meta_data ->> 'display_name', split_part(email, '@', 1))
+from auth.users
+where email = 'SEU_EMAIL'
+on conflict (user_id) do nothing;
+```
+
+3. Confirme que uma linha foi inserida. Essa é a lista explícita de pessoas autorizadas no OmniX.
 
 ## Parte 9 — primeiro teste real
 

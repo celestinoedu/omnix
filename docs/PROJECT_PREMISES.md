@@ -6,11 +6,14 @@
 
 **SUPABASE PRO COMO ÚNICO SERVIÇO PAGO.**
 
-O OmniX pode usar os recursos incluídos no Supabase Pro. A interface será hospedada gratuitamente no GitHub Pages e usará um subdomínio de `lotusnegocios.com`. Nenhum outro serviço pago, add-on ou cobrança variável deve ser ativado sem autorização explícita.
+O OmniX usa o mesmo projeto Supabase Pro do NexLab. A interface é hospedada gratuitamente no GitHub Pages em `omnix.lotusnegocios.com`. Nenhum outro serviço pago, add-on ou cobrança variável deve ser ativado sem autorização explícita.
 
 Regras derivadas:
 
 - Supabase Pro está autorizado e é o custo recorrente previsto.
+- Não criar outro projeto pago enquanto o isolamento lógico no projeto NexLab for suficiente.
+- Todos os objetos OmniX no schema público usam o prefixo `omnix_`; buckets, funções, segredos e jobs também usam nomes exclusivos.
+- O acesso ao OmniX exige adesão explícita em `omnix_profiles`; compartilhar o Supabase Auth não concede acesso automático aos usuários do NexLab.
 - GitHub Pages e eventuais recursos auxiliares devem permanecer em camadas gratuitas.
 - Não ativar add-ons do Supabase nem qualquer outro serviço que gere cobrança sem autorização explícita.
 - Registrar os limites relevantes do plano Pro antes de depender deles.

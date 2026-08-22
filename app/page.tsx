@@ -77,6 +77,8 @@ export default function Dashboard() {
   const [toast, setToast] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(isSupabaseConfigured);
+  const [membershipLoading, setMembershipLoading] = useState(isSupabaseConfigured);
+  const [hasAccess, setHasAccess] = useState(!isSupabaseConfigured);
   const [dataLoading, setDataLoading] = useState(false);
   const [connectionLoading, setConnectionLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -91,17 +93,17 @@ export default function Dashboard() {
 
   const loadAccounts = useCallback(async () => {
     const supabase = getSupabaseBrowserClient(); if (!supabase) return;
-    const { data } = await supabase.from("social_accounts").select("id,display_name,status").eq("platform", "TikTok").eq("status", "active").limit(1).maybeSingle();
+    const { data } = await supabase.from("omnix_social_accounts").select("id,display_name,status").eq("platform", "TikTok").eq("status", "active").limit(1).maybeSingle();
     setTikTokAccount(data as TikTokAccount | null);
   }, []);
 
   const loadPosts = useCallback(async () => {
     const supabase = getSupabaseBrowserClient(); if (!supabase) return;
     setDataLoading(true);
-    const { data, error } = await supabase.from("posts").select("id,title,scheduled_at_utc,status,post_destinations(platform,status)").order("scheduled_at_utc", { ascending: true });
+    const { data, error } = await supabase.from("omnix_posts").select("id,title,scheduled_at_utc,status,omnix_post_destinations(platform,status)").order("scheduled_at_utc", { ascending: true });
     if (error) showToast("Não foi possível carregar os posts.");
     else setPosts((data ?? []).map((item, index) => {
-      const destination = Array.isArray(item.post_destinations) ? item.post_destinations[0] : item.post_destinations;
+      const destination = Array.isArray(item.omnix_post_destinations) ? item.omnix_post_destinations[0] : item.omnix_post_destinations;
       const rawStatus = destination?.status ?? item.status;
       const status: Status = rawStatus === "published" ? "Publicado" : rawStatus === "processing" ? "Processando" : rawStatus === "failed" ? "Falhou" : item.status === "draft" ? "Rascunho" : "Agendado";
       return { id: item.id, title: item.title, network: (destination?.platform ?? "TikTok") as Network, scheduledAt: item.scheduled_at_utc, status, color: colors[index % colors.length] };
@@ -120,14 +122,21 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    void Promise.all([loadPosts(), loadAccounts()]);
-    const result = new URLSearchParams(window.location.search).get("tiktok");
-    if (result) {
-      const messages: Record<string, string> = { connected: "Conta TikTok conectada com sucesso!", denied: "A autorização do TikTok foi cancelada.", missing_scope: "O TikTok não liberou a permissão para publicar.", invalid_state: "A conexão expirou. Tente novamente.", error: "Não foi possível concluir a conexão com o TikTok." };
-      showToast(messages[result] ?? "Retorno do TikTok recebido.");
-      window.history.replaceState({}, "", window.location.pathname);
-    }
+    if (!user) { setHasAccess(false); setMembershipLoading(false); return; }
+    const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+    setMembershipLoading(true);
+    supabase.from("omnix_profiles").select("id").eq("user_id", user.id).maybeSingle().then(async ({ data }) => {
+      const allowed = Boolean(data);
+      setHasAccess(allowed); setMembershipLoading(false);
+      if (!allowed) return;
+      await Promise.all([loadPosts(), loadAccounts()]);
+      const result = new URLSearchParams(window.location.search).get("tiktok");
+      if (result) {
+        const messages: Record<string, string> = { connected: "Conta TikTok conectada com sucesso!", denied: "A autorização do TikTok foi cancelada.", missing_scope: "O TikTok não liberou a permissão para publicar.", invalid_state: "A conexão expirou. Tente novamente.", error: "Não foi possível concluir a conexão com o TikTok." };
+        showToast(messages[result] ?? "Retorno do TikTok recebido.");
+        window.history.replaceState({}, "", window.location.pathname);
+      }
+    });
   }, [user, loadPosts, loadAccounts, showToast]);
 
   const visiblePosts = useMemo(() => posts.filter(post => filter === "Todas" || post.network === filter), [posts, filter]);
@@ -195,22 +204,22 @@ export default function Dashboard() {
         if (metadata.duration > creator.max_video_post_duration_sec) throw new Error(`Este vídeo excede o limite de ${creator.max_video_post_duration_sec} segundos da conta.`);
         if (metadata.width < 360 || metadata.height < 360 || metadata.width > 4096 || metadata.height > 4096) throw new Error("O vídeo deve ter largura e altura entre 360 e 4096 pixels.");
         storagePath = `${user.id}/${crypto.randomUUID()}-${mediaFile.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
-        const { error: uploadError } = await supabase.storage.from("post-media").upload(storagePath, mediaFile, { contentType: mediaFile.type, upsert: false });
+        const { error: uploadError } = await supabase.storage.from("omnix-post-media").upload(storagePath, mediaFile, { contentType: mediaFile.type, upsert: false });
         if (uploadError) throw new Error("Não foi possível enviar o vídeo.");
-        const { data: asset, error: assetError } = await supabase.from("media_assets").insert({ user_id: user.id, storage_path: storagePath, original_name: mediaFile.name, mime_type: mediaFile.type, size_bytes: mediaFile.size, duration_seconds: metadata.duration, width: metadata.width, height: metadata.height }).select("id").single();
+        const { data: asset, error: assetError } = await supabase.from("omnix_media_assets").insert({ user_id: user.id, storage_path: storagePath, original_name: mediaFile.name, mime_type: mediaFile.type, size_bytes: mediaFile.size, duration_seconds: metadata.duration, width: metadata.width, height: metadata.height }).select("id").single();
         if (assetError || !asset) throw new Error("Não foi possível registrar o vídeo.");
         mediaAssetId = asset.id;
-        const { data: post, error: postError } = await supabase.from("posts").insert({ user_id: user.id, media_asset_id: asset.id, title: title.slice(0, 200), caption: title.slice(0, 2200), scheduled_at_utc: scheduledAt.toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo", status: "scheduled" }).select("id").single();
+        const { data: post, error: postError } = await supabase.from("omnix_posts").insert({ user_id: user.id, media_asset_id: asset.id, title: title.slice(0, 200), caption: title.slice(0, 2200), scheduled_at_utc: scheduledAt.toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo", status: "scheduled" }).select("id").single();
         if (postError || !post) throw new Error("Não foi possível salvar o agendamento.");
-        const { error: destinationError } = await supabase.from("post_destinations").insert({
+        const { error: destinationError } = await supabase.from("omnix_post_destinations").insert({
           post_id: post.id, social_account_id: tiktokAccount.id, platform: "TikTok", status: "pending",
           platform_options: { privacy_level: privacy, allow_comment: form.get("allowComment") === "on", allow_duet: form.get("allowDuet") === "on", allow_stitch: form.get("allowStitch") === "on", brand_organic: brandOrganic, brand_content: brandContent, is_aigc: form.get("isAigc") === "on", consent_at: new Date().toISOString() },
         });
-        if (destinationError) { await supabase.from("posts").delete().eq("id", post.id); throw new Error("Não foi possível preparar o destino TikTok."); }
+        if (destinationError) { await supabase.from("omnix_posts").delete().eq("id", post.id); throw new Error("Não foi possível preparar o destino TikTok."); }
         await loadPosts(); setComposerOpen(false); showToast("Post do TikTok agendado com sucesso!");
       } catch (error) {
-        if (mediaAssetId) await supabase.from("media_assets").delete().eq("id", mediaAssetId);
-        if (storagePath) await supabase.storage.from("post-media").remove([storagePath]);
+        if (mediaAssetId) await supabase.from("omnix_media_assets").delete().eq("id", mediaAssetId);
+        if (storagePath) await supabase.storage.from("omnix-post-media").remove([storagePath]);
         showToast(error instanceof Error ? error.message : "Não foi possível agendar o post.");
       } finally { setSaving(false); }
       return;
@@ -221,8 +230,9 @@ export default function Dashboard() {
   }
 
   async function signOut() { await getSupabaseBrowserClient()?.auth.signOut(); }
-  if (authLoading) return <main className="auth-page"><div className="auth-loader"><Sparkles /><span>Preparando seu espaço...</span></div></main>;
+  if (authLoading || (isSupabaseConfigured && user && membershipLoading)) return <main className="auth-page"><div className="auth-loader"><Sparkles /><span>Preparando seu espaço...</span></div></main>;
   if (isSupabaseConfigured && !user) return <AuthGate />;
+  if (isSupabaseConfigured && user && !hasAccess) return <main className="auth-page"><section className="auth-card"><span className="auth-logo"><Sparkles size={24} /></span><p className="eyebrow">OMNIX SOCIAL</p><h1>Acesso ainda não liberado</h1><p>Seu login é válido, mas este e-mail ainda não foi autorizado para usar o OmniX.</p><button className="secondary auth-back" onClick={signOut}>Sair</button></section></main>;
 
   const connectedCount = tiktokAccount ? 1 : 0;
   return (

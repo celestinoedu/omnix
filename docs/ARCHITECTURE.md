@@ -4,7 +4,7 @@
 
 Este documento separa a arquitetura existente da arquitetura-alvo. Componentes planejados não devem ser descritos ao proprietário como já implementados.
 
-## Arquitetura atual — TikTok implementado, aguardando configuração externa
+## Arquitetura atual — backend publicado, aguardando credenciais e aprovação do TikTok
 
 ### Interface
 
@@ -28,23 +28,25 @@ Este documento separa a arquitetura existente da arquitetura-alvo. Componentes p
 - Novos agendamentos gravados no `localStorage` do navegador.
 - Cliente Supabase, login por magic link, CRUD de agendamentos e upload privado já implementados no código.
 - Migração SQL versionada em `supabase/migrations/202607250001_initial_schema.sql`.
-- Projeto Supabase gratuito criado e migração inicial aplicada em 25/07/2026.
-- Variáveis públicas configuradas no localhost e no ambiente Sites; a versão 4 de produção ativou a camada real.
+- O OmniX compartilha o projeto Supabase Pro `nexlab` (`jycpsvlnnmbiwscvgdth`) para evitar um segundo custo recorrente.
+- Todos os objetos do produto usam o namespace `omnix_*`, o bucket privado `omnix-post-media` e funções com nome `tiktok-*`; nenhuma tabela do NexLab foi alterada.
+- O Supabase Auth é compartilhado, mas o acesso ao OmniX exige um registro administrativo em `omnix_profiles`; não existe autocadastro do produto.
+- Variáveis públicas locais e do GitHub Actions apontam para o projeto compartilhado.
 - Quando não há configuração Supabase, o aplicativo ainda entra explicitamente em modo demonstração.
-- Estrutura de OAuth e publicação TikTok implementada no repositório, ainda não aplicada/publicada no Supabase remoto.
+- Migrações do OmniX aplicadas após composição segura com o histórico `0001` a `0015` do NexLab.
 
 ### Backend TikTok implementado
 
 - `tiktok-auth`: inicia OAuth, valida `state`, troca o código, lê o perfil e permite revogação.
 - `tiktok-creator-info`: renova tokens e consulta as opções atuais obrigatórias do criador.
 - `tiktok-publisher`: reivindica posts vencidos, valida consentimentos, envia vídeo, consulta o processamento e atualiza estados.
-- Tokens são cifrados com AES-256-GCM e ficam em `social_credentials`, sem acesso pelo navegador.
+- Tokens são cifrados com AES-256-GCM e ficam em `omnix_social_credentials`, sem acesso pelo navegador.
 - A migração `202608220001_tiktok_direct_post.sql` adiciona estados OAuth e a reivindicação transacional da fila.
-- Supabase Cron chama o publicador a cada minuto usando um segredo guardado no Vault.
+- As três Edge Functions estão publicadas no projeto compartilhado. O Supabase Cron ainda precisa ser ativado após cadastrar as credenciais TikTok.
 
 ### Limitação essencial
 
-A integração só ficará operacional após criar e aprovar o aplicativo no TikTok for Developers, aplicar a migração, publicar as Edge Functions e configurar seus segredos. Até a auditoria do TikTok, Direct Post publica apenas com visibilidade `SELF_ONLY`.
+A integração só ficará operacional após criar o aplicativo no TikTok for Developers, cadastrar `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET`, liberar o usuário proprietário e ativar o Cron. Até a auditoria do TikTok, Direct Post publica apenas com visibilidade `SELF_ONLY`.
 
 ## Arquitetura-alvo — expansão após validar o TikTok
 
@@ -68,7 +70,7 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
    - Estrutura e políticas iniciais já versionadas, aguardando aplicação no projeto remoto.
 
 4. **Armazenamento de mídia**
-   - Supabase Storage no MVP, condicionado aos limites gratuitos.
+   - Supabase Storage incluído no projeto Pro compartilhado, com monitoramento das cotas.
    - Arquivos privados com URLs assinadas e prazo curto.
    - Política de retenção para remover mídias antigas quando seguro.
    - Bucket privado e limite de 50 MB definidos na migração inicial.
@@ -96,7 +98,7 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
 
 ## Modelo de dados proposto
 
-### `profiles`
+### `omnix_profiles`
 
 - `id`
 - `user_id`
@@ -105,7 +107,7 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
 - `created_at`
 - `updated_at`
 
-### `social_accounts`
+### `omnix_social_accounts`
 
 - `id`
 - `user_id`
@@ -118,7 +120,7 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
 - `created_at`
 - `updated_at`
 
-### `social_credentials`
+### `omnix_social_credentials`
 
 - `social_account_id`
 - `encrypted_access_token`
@@ -128,7 +130,7 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
 
 Essa tabela não possui políticas para clientes autenticados. Somente o backend privilegiado poderá acessar tokens.
 
-### `media_assets`
+### `omnix_media_assets`
 
 - `id`
 - `user_id`
@@ -141,7 +143,7 @@ Essa tabela não possui políticas para clientes autenticados. Somente o backend
 - `status`
 - `created_at`
 
-### `posts`
+### `omnix_posts`
 
 - `id`
 - `user_id`
@@ -153,7 +155,7 @@ Essa tabela não possui políticas para clientes autenticados. Somente o backend
 - `created_at`
 - `updated_at`
 
-### `post_destinations`
+### `omnix_post_destinations`
 
 - `id`
 - `post_id`
@@ -165,7 +167,7 @@ Essa tabela não possui políticas para clientes autenticados. Somente o backend
 - `last_error_code`
 - `last_error_message`
 
-### `publication_attempts`
+### `omnix_publication_attempts`
 
 - `id`
 - `post_destination_id`
@@ -210,6 +212,8 @@ Cada destino deve ter estado próprio. Um post enviado a três redes pode ser pu
 - A Edge Function tem limite de duração e memória; por isso o MVP limita vídeos a 50 MB e processa lotes pequenos.
 - Limites consultados em 22/08/2026 para o Pro: 100 GB de Storage incluído, 250 GB de egress incluído e 2 milhões de invocações de Edge Functions por mês; a duração máxima de uma função Pro é 400 segundos e a memória máxima é 256 MB.
 - O GitHub Pages usa repositório público e não adiciona custo. O workflow não recebe segredos sociais.
+- Auth, recursos computacionais, cotas, backups e incidentes são compartilhados com o NexLab; a separação é lógica, não física.
+- A `service_role` e administradores do projeto alcançam os dois produtos. Ela nunca deve ir ao navegador ou ao GitHub.
 - Cotas das APIs sociais são independentes da hospedagem.
 - Contas de desenvolvedor e revisões podem exigir verificação de identidade ou empresa, mesmo sem cobrança.
 - Antes da implementação real, registrar os limites atuais e definir travas de uso.

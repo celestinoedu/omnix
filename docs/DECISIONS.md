@@ -64,9 +64,9 @@ Este registro é cumulativo. Decisões antigas não devem ser apagadas; quando s
 
 - Data: 25/07/2026
 - Estado: Aceita
-- Decisão: armazenar metadados das contas em `social_accounts` e tokens cifrados em `social_credentials`.
+- Decisão: armazenar metadados das contas em `social_accounts` e tokens cifrados em `social_credentials` (renomeadas para `omnix_social_accounts` e `omnix_social_credentials` por D-013).
 - Motivo: impedir que uma consulta feita pelo navegador alcance tokens, mesmo quando os registros pertencem ao usuário autenticado.
-- Consequência: `social_credentials` não possui política RLS para clientes e será acessada somente pelo backend privilegiado.
+- Consequência: `omnix_social_credentials` não possui política RLS para clientes e será acessada somente pelo backend privilegiado.
 
 ## D-009 — Modo demonstração como fallback explícito
 
@@ -99,3 +99,11 @@ Este registro é cumulativo. Decisões antigas não devem ser apagadas; quando s
 - Decisão: executar OAuth, renovação cifrada de tokens, consulta do criador, envio e acompanhamento do TikTok em Edge Functions; disparar a fila com Supabase Cron.
 - Motivo: mantém segredos fora do GitHub Pages e concentra o backend no único serviço pago autorizado.
 - Consequência: a publicação real depende do cadastro e da aprovação do aplicativo no TikTok for Developers.
+
+## D-013 — Projeto Supabase compartilhado com o NexLab
+
+- Data: 22/08/2026
+- Estado: Aceita
+- Decisão: executar o OmniX no projeto Supabase Pro `nexlab` (`jycpsvlnnmbiwscvgdth`) para evitar o custo de um segundo projeto.
+- Motivo: o volume inicial é pequeno e o proprietário aceita compartilhar a infraestrutura para concentrar o custo no plano já contratado.
+- Consequência: tabelas, tipos, índices, policies, bucket, funções, segredos e job do OmniX recebem nomes exclusivos com `omnix`; a tabela `omnix_profiles` controla adesão explícita. Auth, cotas, disponibilidade, backups e privilégios administrativos continuam compartilhados, portanto uma indisponibilidade, migração incorreta ou vazamento da `service_role` pode afetar os dois produtos.

@@ -1,6 +1,6 @@
 import { corsHeaders, json, safeError } from "../_shared/http.ts";
 import { sha256 } from "../_shared/crypto.ts";
-import { adminClient, requireUser, requiredEnv } from "../_shared/supabase.ts";
+import { adminClient, requireOmniXUser, requiredEnv } from "../_shared/supabase.ts";
 import { decryptToken } from "../_shared/crypto.ts";
 import { exchangeCode, saveTikTokCredentials } from "../_shared/tiktok.ts";
 
@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
 
       const client = adminClient();
       const digest = await sha256(state);
-      const { data: oauthState } = await client.from("oauth_states")
+      const { data: oauthState } = await client.from("omnix_oauth_states")
         .select("id,user_id")
         .eq("provider", "TikTok")
         .eq("state_digest", digest)
@@ -35,13 +35,17 @@ Deno.serve(async (req) => {
         .single();
       if (!oauthState) return Response.redirect(appUrl("invalid_state"), 302);
 
-      const { data: consumed } = await client.from("oauth_states")
+      const { data: consumed } = await client.from("omnix_oauth_states")
         .update({ consumed_at: new Date().toISOString() })
         .eq("id", oauthState.id)
         .is("consumed_at", null)
         .select("id")
         .single();
       if (!consumed) return Response.redirect(appUrl("invalid_state"), 302);
+
+      const { data: membership } = await client.from("omnix_profiles")
+        .select("id").eq("user_id", oauthState.user_id).maybeSingle();
+      if (!membership) return Response.redirect(appUrl("error"), 302);
 
       const token = await exchangeCode(code, callbackUri());
       if (!token.scope.split(",").includes("video.publish")) return Response.redirect(appUrl("missing_scope"), 302);
@@ -50,15 +54,15 @@ Deno.serve(async (req) => {
     }
 
     if (req.method !== "POST") return json({ error: "Método não permitido." }, 405);
-    const user = await requireUser(req);
+    const user = await requireOmniXUser(req);
     const body = await req.json().catch(() => ({}));
     const client = adminClient();
 
     if (body.action === "disconnect") {
-      const { data: account } = await client.from("social_accounts")
-        .select("id,social_credentials(encrypted_access_token)")
+      const { data: account } = await client.from("omnix_social_accounts")
+        .select("id,omnix_social_credentials(encrypted_access_token)")
         .eq("user_id", user.id).eq("platform", "TikTok").eq("status", "active").limit(1).maybeSingle();
-      const credentials = Array.isArray(account?.social_credentials) ? account?.social_credentials[0] : account?.social_credentials;
+      const credentials = Array.isArray(account?.omnix_social_credentials) ? account?.omnix_social_credentials[0] : account?.omnix_social_credentials;
       if (credentials?.encrypted_access_token) {
         const token = await decryptToken(credentials.encrypted_access_token);
         await fetch("https://open.tiktokapis.com/v2/oauth/revoke/", {
@@ -68,15 +72,15 @@ Deno.serve(async (req) => {
         });
       }
       if (account) {
-        await client.from("social_credentials").delete().eq("social_account_id", account.id);
-        await client.from("social_accounts").update({ status: "revoked", updated_at: new Date().toISOString() }).eq("id", account.id);
+        await client.from("omnix_social_credentials").delete().eq("social_account_id", account.id);
+        await client.from("omnix_social_accounts").update({ status: "revoked", updated_at: new Date().toISOString() }).eq("id", account.id);
       }
       return json({ ok: true });
     }
 
     const stateBytes = crypto.getRandomValues(new Uint8Array(32));
     const state = btoa(String.fromCharCode(...stateBytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-    const { error } = await client.from("oauth_states").insert({
+    const { error } = await client.from("omnix_oauth_states").insert({
       user_id: user.id,
       provider: "TikTok",
       state_digest: await sha256(state),

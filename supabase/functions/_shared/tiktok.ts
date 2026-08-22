@@ -63,7 +63,7 @@ export async function getUserInfo(accessToken: string) {
 
 export async function getActiveTikTokToken(client: SupabaseClient, accountId: string) {
   const { data: account, error: accountError } = await client
-    .from("social_accounts")
+    .from("omnix_social_accounts")
     .select("id,token_expires_at,status")
     .eq("id", accountId)
     .eq("platform", "TikTok")
@@ -71,7 +71,7 @@ export async function getActiveTikTokToken(client: SupabaseClient, accountId: st
   if (accountError || !account || account.status !== "active") throw new Error("A conta TikTok precisa ser reconectada.");
 
   const { data: credentials, error: credentialsError } = await client
-    .from("social_credentials")
+    .from("omnix_social_credentials")
     .select("encrypted_access_token,encrypted_refresh_token")
     .eq("social_account_id", accountId)
     .single();
@@ -89,12 +89,12 @@ export async function getActiveTikTokToken(client: SupabaseClient, accountId: st
     refresh_token: currentRefreshToken,
   }));
 
-  await client.from("social_credentials").update({
+  await client.from("omnix_social_credentials").update({
     encrypted_access_token: await encryptToken(refreshed.access_token),
     encrypted_refresh_token: await encryptToken(refreshed.refresh_token),
     updated_at: new Date().toISOString(),
   }).eq("social_account_id", accountId);
-  await client.from("social_accounts").update({
+  await client.from("omnix_social_accounts").update({
     token_expires_at: tokenExpiry(refreshed.expires_in),
     refresh_token_expires_at: tokenExpiry(refreshed.refresh_expires_in),
     scopes: refreshed.scope.split(",").filter(Boolean),
@@ -117,7 +117,7 @@ export async function queryCreatorInfo(accessToken: string) {
 
 export async function saveTikTokCredentials(client: SupabaseClient, userId: string, token: TikTokTokenResponse) {
   const profile = await getUserInfo(token.access_token);
-  const { data: account, error } = await client.from("social_accounts").upsert({
+  const { data: account, error } = await client.from("omnix_social_accounts").upsert({
     user_id: userId,
     platform: "TikTok",
     platform_account_id: token.open_id,
@@ -130,7 +130,7 @@ export async function saveTikTokCredentials(client: SupabaseClient, userId: stri
   }, { onConflict: "user_id,platform,platform_account_id" }).select("id").single();
   if (error || !account) throw new Error("Não foi possível registrar a conta TikTok.");
 
-  const { error: credentialError } = await client.from("social_credentials").upsert({
+  const { error: credentialError } = await client.from("omnix_social_credentials").upsert({
     social_account_id: account.id,
     encrypted_access_token: await encryptToken(token.access_token),
     encrypted_refresh_token: await encryptToken(token.refresh_token),
@@ -140,4 +140,3 @@ export async function saveTikTokCredentials(client: SupabaseClient, userId: stri
   if (credentialError) throw new Error("Não foi possível proteger as credenciais TikTok.");
   return account.id as string;
 }
-

@@ -4,7 +4,7 @@
 
 ## Etapa atual
 
-**Integração TikTok implementada localmente / aguardando configuração e aprovação externas.**
+**Backend TikTok publicado no Supabase compartilhado / aguardando credenciais, acesso do proprietário e aprovação do TikTok.**
 
 ## Implementado
 
@@ -24,8 +24,8 @@
 - Cliente Supabase com detecção segura de configuração.
 - Login sem senha por link enviado ao e-mail.
 - Migração PostgreSQL completa com Row Level Security.
-- Tabelas para perfis, contas sociais, credenciais isoladas, mídias, posts, destinos e tentativas.
-- Bucket privado de mídia com limite gratuito de 50 MB.
+- Tabelas isoladas `omnix_*` para perfis, contas sociais, credenciais, mídias, posts, destinos e tentativas.
+- Bucket privado exclusivo `omnix-post-media` com limite de 50 MB.
 - Salvamento e leitura de agendamentos reais quando o Supabase estiver configurado.
 - Upload privado com compensação em caso de falha no registro.
 - Fallback explícito para modo demonstração.
@@ -38,7 +38,7 @@
 - Formulário específico para vídeo TikTok com data completa e fuso do navegador.
 - Validação de formato, 50 MB, dimensões e duração máxima informada pela conta.
 - Interface oficial de privacidade sem valor padrão, interações, conteúdo comercial, IA e consentimento.
-- Estado real da conexão TikTok lido de `social_accounts`; Instagram e YouTube aparecem como planejados, não conectados.
+- Estado real da conexão TikTok lido de `omnix_social_accounts`; Instagram e YouTube aparecem como planejados, não conectados.
 - OAuth TikTok com proteção `state`, troca server-side e revogação.
 - Tokens TikTok cifrados em AES-256-GCM e renovados no backend.
 - Consulta obrigatória de `creator_info` antes de abrir o agendamento e novamente antes de publicar.
@@ -49,6 +49,12 @@
 - Repositório público GitHub conectado: `https://github.com/celestinoedu/omnix`.
 - Workflow do GitHub Pages executado com sucesso em 22/08/2026.
 - Produção publicada e validada em `https://omnix.lotusnegocios.com`, com HTTPS, login Supabase e páginas legais.
+- OmniX ligado ao projeto Supabase Pro `nexlab` (`jycpsvlnnmbiwscvgdth`), preservando as 15 migrações existentes do NexLab.
+- Migrações isoladas do OmniX aplicadas no projeto compartilhado em 22/08/2026.
+- Edge Functions `tiktok-auth`, `tiktok-creator-info` e `tiktok-publisher` publicadas no projeto compartilhado.
+- Variáveis públicas locais e do GitHub Actions apontando para o Supabase compartilhado.
+- Segredos exclusivos de criptografia, Cron e URL do OmniX configurados; valores não foram gravados no repositório.
+- Adesão explícita por `omnix_profiles`, sem liberar automaticamente usuários do NexLab.
 
 ## Simulado
 
@@ -57,11 +63,11 @@
 - Estados de posts publicados.
 - Instagram e YouTube.
 
-## Implementado, mas ainda não ativado no ambiente remoto
+## Implementado, mas ainda não ativado por completo
 
-- Migração TikTok no Supabase.
-- Edge Functions `tiktok-auth`, `tiktok-creator-info` e `tiktok-publisher`.
-- Segredos do TikTok, criptografia e cron.
+- Agendador SQL do Cron, que depende do segredo compartilhado com a função.
+- Credenciais `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET`, ainda dependentes do aplicativo TikTok.
+- Primeiro usuário em `omnix_profiles`, dependente da confirmação do e-mail de acesso.
 
 ## Ainda não implementado
 
@@ -85,9 +91,9 @@
 Ativar e validar o TikTok já implementado:
 
 1. Criar o aplicativo no TikTok for Developers e adicionar os produtos exigidos.
-2. Autenticar a CLI na conta Supabase que possui `hbhfqfebqtytgmjmqdtr`; o projeto não aparece na sessão CLI atual.
-3. Aplicar a migração e publicar as três Edge Functions.
-4. Configurar os seis segredos do backend e o Cron.
+2. Cadastrar `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET` no projeto Supabase compartilhado.
+3. Liberar o e-mail proprietário em `omnix_profiles` e adicionar a URL do OmniX às Redirect URLs do Auth sem substituir a Site URL do NexLab.
+4. Ativar o job `omnix-tiktok-publisher` no Cron.
 5. Conectar a conta TikTok pelo OmniX.
 6. Agendar um vídeo de teste como `SELF_ONLY` e confirmar o ciclo completo.
 7. Gravar a demonstração e solicitar auditoria do TikTok para publicação pública.

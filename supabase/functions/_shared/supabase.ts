@@ -29,7 +29,13 @@ export async function requireUser(req: Request) {
   return data.user;
 }
 
+export async function requireOmniXUser(req: Request) {
+  const user = await requireUser(req);
+  const { data } = await adminClient().from("omnix_profiles").select("id").eq("user_id", user.id).maybeSingle();
+  if (!data) throw new Error("Este usuário não está autorizado no OmniX.");
+  return user;
+}
+
 export function requiredEnv(name: string) {
   return env(name);
 }
-
