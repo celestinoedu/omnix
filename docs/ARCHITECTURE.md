@@ -1,26 +1,26 @@
 # Arquitetura do OmniX Social
 
-Última atualização: 25 de julho de 2026.
+Última atualização: 22 de agosto de 2026.
 
 Este documento separa a arquitetura existente da arquitetura-alvo. Componentes planejados não devem ser descritos ao proprietário como já implementados.
 
-## Arquitetura atual — MVP visual com fundação de dados
+## Arquitetura atual — TikTok implementado, aguardando configuração externa
 
 ### Interface
 
 - React 19.
 - TypeScript em modo estrito.
 - Estrutura de rotas no padrão Next.js App Router.
-- Empacotamento Vinext sobre Vite para execução em Cloudflare.
+- Exportação estática do Next.js para GitHub Pages.
 - Ícones `lucide-react`.
 - CSS próprio e responsivo, sem biblioteca visual paga.
 
 ### Hospedagem
 
-- Site privado no ambiente Sites/Cloudflare.
-- URL atual: `https://omnix-social.ecarvalho95.chatgpt.site`.
-- Identificador do projeto de hospedagem armazenado em `.openai/hosting.json`.
-- Build gera `dist/server/index.js` e copia os metadados necessários para `dist/.openai/hosting.json`.
+- Destino definido: GitHub Pages, com workflow em `.github/workflows/deploy-pages.yml`.
+- Domínio definido: `https://omnix.lotusnegocios.com`.
+- O domínio raiz já usa GitHub Pages; o subdomínio estava livre na verificação DNS de 22/08/2026.
+- Build gera o site estático em `out/`; não há segredo nem código de publicação social no GitHub Pages.
 
 ### Dados atuais
 
@@ -31,13 +31,22 @@ Este documento separa a arquitetura existente da arquitetura-alvo. Componentes p
 - Projeto Supabase gratuito criado e migração inicial aplicada em 25/07/2026.
 - Variáveis públicas configuradas no localhost e no ambiente Sites; a versão 4 de produção ativou a camada real.
 - Quando não há configuração Supabase, o aplicativo ainda entra explicitamente em modo demonstração.
-- Nenhum token social.
+- Estrutura de OAuth e publicação TikTok implementada no repositório, ainda não aplicada/publicada no Supabase remoto.
+
+### Backend TikTok implementado
+
+- `tiktok-auth`: inicia OAuth, valida `state`, troca o código, lê o perfil e permite revogação.
+- `tiktok-creator-info`: renova tokens e consulta as opções atuais obrigatórias do criador.
+- `tiktok-publisher`: reivindica posts vencidos, valida consentimentos, envia vídeo, consulta o processamento e atualiza estados.
+- Tokens são cifrados com AES-256-GCM e ficam em `social_credentials`, sem acesso pelo navegador.
+- A migração `202608220001_tiktok_direct_post.sql` adiciona estados OAuth e a reivindicação transacional da fila.
+- Supabase Cron chama o publicador a cada minuto usando um segredo guardado no Vault.
 
 ### Limitação essencial
 
-O localhost e a produção privada já apresentam o login real. Ainda não haverá publicação social até a implementação dos adaptadores OAuth.
+A integração só ficará operacional após criar e aprovar o aplicativo no TikTok for Developers, aplicar a migração, publicar as Edge Functions e configurar seus segredos. Até a auditoria do TikTok, Direct Post publica apenas com visibilidade `SELF_ONLY`.
 
-## Arquitetura-alvo — publicação automática
+## Arquitetura-alvo — expansão após validar o TikTok
 
 A seleção final de serviços deve ser validada novamente contra os free tiers vigentes antes da implementação.
 
@@ -71,7 +80,7 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
    - `state` e PKCE quando suportados para evitar sequestro do fluxo OAuth.
 
 6. **Agendador**
-   - Cloudflare Cron Trigger ou Supabase Cron, após comparar limites gratuitos.
+   - Supabase Cron no plano Pro.
    - Execução em intervalos curtos para buscar posts vencidos.
    - Travamento transacional para impedir dois workers de publicarem o mesmo post.
 
@@ -194,10 +203,13 @@ Cada destino deve ter estado próprio. Um post enviado a três redes pode ser pu
 8. Backend salva o identificador externo e o resultado.
 9. Falha recuperável entra em retentativa; falha permanente pede ação do usuário.
 
-## Limites e riscos do free tier
+## Limites e custos
 
-- Vídeos podem consumir rapidamente o limite de armazenamento e tráfego.
-- Cron gratuito pode ter frequência ou duração limitada.
+- Supabase Pro é o único custo recorrente autorizado; add-ons e excesso de cota exigem autorização.
+- Vídeos podem consumir rapidamente armazenamento e tráfego incluídos.
+- A Edge Function tem limite de duração e memória; por isso o MVP limita vídeos a 50 MB e processa lotes pequenos.
+- Limites consultados em 22/08/2026 para o Pro: 100 GB de Storage incluído, 250 GB de egress incluído e 2 milhões de invocações de Edge Functions por mês; a duração máxima de uma função Pro é 400 segundos e a memória máxima é 256 MB.
+- O GitHub Pages usa repositório público e não adiciona custo. O workflow não recebe segredos sociais.
 - Cotas das APIs sociais são independentes da hospedagem.
 - Contas de desenvolvedor e revisões podem exigir verificação de identidade ou empresa, mesmo sem cobrança.
 - Antes da implementação real, registrar os limites atuais e definir travas de uso.

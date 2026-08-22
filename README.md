@@ -1,6 +1,6 @@
 # OmniX Social
 
-MVP visual e interativo de um agendador de posts para Instagram, TikTok e YouTube.
+Agendador de vídeos para TikTok com interface estática e backend no Supabase.
 
 ## Memória do projeto
 
@@ -14,16 +14,20 @@ Antes de alterar o projeto, leia `AGENTS.md`. Ele aponta para as premissas, arqu
 4. Execute `npm run dev`.
 5. Abra http://localhost:3000.
 
-## O que já funciona
+## O que está implementado
 
 - Dashboard responsivo.
 - Calendário com filtros por rede.
 - Criação de agendamentos.
 - Persistência dos novos posts no navegador.
-- Tela de conexões demonstrativa.
+- OAuth oficial do TikTok em Edge Function.
+- Criptografia e renovação de tokens no backend.
+- Regras obrigatórias de privacidade, interação, conteúdo comercial e consentimento.
+- Publicador agendado e acompanhamento de status pela Content Posting API.
+- Exportação estática e workflow do GitHub Pages para `omnix.lotusnegocios.com`.
 
 ## Limite desta etapa
 
-As conexões sociais ainda são demonstrativas. A publicação automática real exige cadastro e aprovação nas APIs oficiais de Meta, TikTok e Google/YouTube. Nunca armazene tokens de redes sociais no navegador.
+O código está pronto, mas a operação real depende da configuração e aprovação do aplicativo no TikTok for Developers, publicação das Edge Functions e ativação do Cron. Nunca armazene tokens de redes sociais no navegador ou no GitHub.
 
 Veja o roteiro completo em `docs/GUIA-CLIQUE-A-CLIQUE.md`.

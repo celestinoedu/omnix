@@ -17,8 +17,8 @@ Não presuma que uma funcionalidade demonstrativa está integrada às APIs reais
 
 ## Regras permanentes
 
-- A premissa MASTER é **ZERO CUSTO**. Não habilite serviço pago, cobrança, upgrade ou recurso que possa gerar cobrança sem autorização explícita do proprietário.
-- Prefira tecnologias com free tier adequado ao MVP. Registre limites e riscos de cobrança.
+- A premissa MASTER é **SUPABASE PRO COMO ÚNICO SERVIÇO PAGO**. Não habilite outro serviço pago, add-on ou cobrança variável sem autorização explícita do proprietário.
+- Prefira GitHub Pages e tecnologias gratuitas fora do Supabase. Registre limites e riscos de cobrança.
 - O proprietário é não técnico. Toda configuração exigida dele deve receber instruções clique a clique, em português e sem depender de conhecimento prévio.
 - Use apenas APIs oficiais para Instagram, TikTok e YouTube. Não use automação de navegador, scraping ou métodos que coloquem contas em risco.
 - Tokens OAuth, client secrets e chaves nunca podem ir para o navegador, Git ou arquivos versionados.

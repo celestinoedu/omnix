@@ -61,7 +61,7 @@ export function AuthGate() {
                 {sending ? "Enviando..." : "Enviar link de acesso"}
               </button>
             </form>
-            <small>Seu acesso é protegido pelo Supabase Auth. Nenhuma senha social é solicitada.</small>
+            <small>Seu acesso é protegido pelo Supabase Auth. Nenhuma senha social é solicitada.<br /><a href="/privacidade/">Privacidade</a> · <a href="/termos/">Termos de uso</a></small>
           </>
         )}
       </section>

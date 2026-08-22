@@ -1,124 +1,194 @@
-# Guia clique a clique — OmniX Social
+# Guia clique a clique — ativar TikTok e GitHub Pages
 
-## O que esta primeira versão faz
+Última atualização: 22 de agosto de 2026.
 
-Você já pode navegar pelo calendário, filtrar por rede social, abrir “Conexões” e criar novos agendamentos. Os dados criados ficam salvos apenas no navegador usado.
+O código do OmniX está preparado para agendar vídeos usando a API oficial do TikTok. Para funcionar de verdade, ainda é necessário autorizar o aplicativo nos painéis do TikTok, Supabase e GitHub. Não envie nenhuma chave secreta por conversa e não coloque segredos no GitHub.
 
-## Como abrir no seu computador
+## Resultado esperado
 
-1. Abra https://nodejs.org.
-2. Clique no botão **LTS**.
-3. Abra o arquivo baixado e clique em **Next** até aparecer **Install**.
-4. Clique em **Install** e depois em **Finish**.
-5. Abra a pasta `OmniX`.
-6. Clique com o botão direito em uma área vazia da pasta.
-7. Clique em **Abrir no Terminal**.
-8. Digite `npm install` e pressione Enter.
-9. Quando terminar, digite `npm run dev` e pressione Enter.
-10. Abra o navegador e acesse `http://localhost:3000`.
+Ao concluir este guia, o fluxo será:
 
-## Como testar
+1. Entrar no OmniX pelo link enviado ao e-mail.
+2. Clicar em **Conectar TikTok** e autorizar no site oficial.
+3. Escolher vídeo, legenda, data, privacidade e declarações.
+4. O Supabase Cron verificar a fila a cada minuto.
+5. O vídeo ser enviado ao TikTok no horário e o OmniX confirmar o resultado.
 
-1. Clique em **Criar post**.
-2. Preencha o título, escolha a rede, o dia e o horário.
-3. Clique em **Agendar post**.
-4. Confira o novo cartão no calendário.
-5. Clique em **3 contas conectadas** para abrir a tela de conexões.
+Enquanto o TikTok não concluir a auditoria do aplicativo, os vídeos ficam obrigatoriamente em **Somente eu**. Essa é uma restrição oficial, não uma limitação do OmniX.
 
-## Caminho para publicação automática real
+## Parte 1 — criar o aplicativo no TikTok
 
-Essa parte depende das plataformas, não apenas do código.
+1. Abra `https://developers.tiktok.com`.
+2. Clique em **Log in** e entre com a conta que administrará o aplicativo.
+3. Abra **Manage apps**.
+4. Clique em **Connect an app** ou **Create app**.
+5. Em nome, use `OmniX Social`.
+6. Em plataforma, escolha **Web**.
+7. Em URL do site, informe `https://omnix.lotusnegocios.com`.
+8. Se forem solicitadas URLs legais, informe:
+   - Privacidade: `https://omnix.lotusnegocios.com/privacidade/`
+   - Termos: `https://omnix.lotusnegocios.com/termos/`
+9. Salve sem publicar chaves em nenhum documento.
+10. Se aparecer **URL properties** ou verificação de domínio, adicione `https://omnix.lotusnegocios.com/` e escolha a verificação por DNS.
+11. Copie o registro indicado pelo TikTok para o painel DNS e aguarde aparecer **Verified**.
 
-### Instagram
+### Adicionar Login Kit
 
-1. A conta precisa ser profissional (Empresa ou Criador) e vinculada a uma Página do Facebook.
-2. Acesse `developers.facebook.com` e crie uma conta de desenvolvedor.
-3. Crie um aplicativo do tipo Business.
-4. Adicione os produtos de Login do Facebook e Instagram Graph API.
-5. Cadastre a URL pública do OmniX nas URLs de redirecionamento.
-6. Solicite as permissões necessárias para publicar conteúdo.
-7. Envie o aplicativo para análise da Meta.
+1. Dentro do aplicativo, procure **Products** ou **Add products**.
+2. Adicione **Login Kit**.
+3. Abra a configuração para Web.
+4. Em **Redirect URI**, cadastre exatamente:
+   `https://hbhfqfebqtytgmjmqdtr.supabase.co/functions/v1/tiktok-auth/callback`
+5. Não acrescente barra no final e não use `http`.
+6. Salve.
 
-### TikTok
+### Adicionar Content Posting API
 
-1. Acesse `developers.tiktok.com`.
-2. Crie uma conta de desenvolvedor.
-3. Crie um aplicativo.
-4. Adicione o produto Content Posting API.
-5. Cadastre a URL pública do OmniX como Redirect URI.
-6. Solicite a liberação para Direct Post.
-7. Envie o aplicativo e a demonstração para análise.
+1. Volte a **Products**.
+2. Adicione **Content Posting API**.
+3. Ative **Direct Post**.
+4. Solicite os escopos `user.info.basic` e `video.publish`.
+5. Preencha a descrição explicando que o usuário conecta a própria conta, escolhe um vídeo, edita a legenda, escolhe privacidade e consentimentos e agenda o envio.
+6. Se o portal pedir uma demonstração, primeiro conclua as partes do Supabase e grave o fluxo de teste como **Somente eu**.
+7. Envie para análise quando todas as informações estiverem completas.
 
-### YouTube
+### Guardar as duas credenciais
 
-1. Acesse `console.cloud.google.com`.
-2. Crie um novo projeto.
-3. Abra **APIs e serviços**.
-4. Clique em **Biblioteca**.
-5. Procure e ative **YouTube Data API v3**.
-6. Abra **Tela de consentimento OAuth** e preencha os dados.
-7. Crie uma credencial OAuth do tipo Aplicativo da Web.
-8. Cadastre a URL pública do OmniX nas URLs de redirecionamento.
-9. Publique a tela de consentimento quando o aplicativo estiver pronto.
+1. Abra **Basic information** ou **Credentials** no aplicativo TikTok.
+2. Localize **Client key** e **Client secret**.
+3. Guarde ambos em um gerenciador de senhas.
+4. Não cole essas credenciais em `.env.local`, Markdown, GitHub Issue ou conversa.
 
-## Arquitetura gratuita recomendada para a próxima etapa
+## Parte 2 — aplicar o banco no Supabase
 
-- Interface e API: Cloudflare Workers/Pages ou hospedagem equivalente no free tier.
-- Banco, login e arquivos: Supabase free tier.
-- Agendador: Supabase Cron ou Cloudflare Cron Triggers.
-- Código: GitHub gratuito.
+1. Abra `https://supabase.com/dashboard`.
+2. Entre no projeto `omnix-social`.
+3. No menu esquerdo, clique em **SQL Editor**.
+4. Clique em **New query**.
+5. No computador, abra `OmniX/supabase/migrations/202608220001_tiktok_direct_post.sql`.
+6. Copie todo o conteúdo e cole no editor.
+7. Clique em **Run** uma única vez.
+8. Confirme que aparece sucesso. Se houver erro, pare e copie somente a mensagem do erro; nunca copie chaves.
 
-Os planos gratuitos têm limites. “Zero custo” funciona para desenvolvimento, validação e baixo volume, mas crescimento de uso ou armazenamento pode exigir um plano pago no futuro.
+## Parte 3 — publicar as Edge Functions
 
-## Ativar login, banco e arquivos reais com Supabase
+Esta etapa usa o terminal apenas para enviar os arquivos ao seu próprio Supabase.
 
-Não é necessário cadastrar cartão. Não compartilhe sua senha do Supabase nem a senha do banco.
+1. Abra a pasta `OmniX`.
+2. Clique com o botão direito em uma área vazia e escolha **Abrir no Terminal**.
+3. Digite `npx supabase login` e pressione Enter.
+4. O navegador abrirá. Autorize a CLI e volte ao terminal.
+5. Digite `npx supabase link --project-ref hbhfqfebqtytgmjmqdtr`.
+6. Se pedir a senha do banco, use a senha guardada no gerenciador; não envie a senha na conversa.
+7. Execute, um por vez:
+   - `npx supabase functions deploy tiktok-auth`
+   - `npx supabase functions deploy tiktok-creator-info`
+   - `npx supabase functions deploy tiktok-publisher`
+8. Aguarde a confirmação de sucesso das três funções.
 
-### Parte 1 — Criar a conta e o projeto
+## Parte 4 — criar os segredos das funções
 
-1. Abra `https://supabase.com`.
-2. Clique em **Start your project**.
-3. Entre usando sua conta do GitHub ou escolha uma das opções de acesso oferecidas.
-4. Se aparecer a criação de uma organização, clique em **New organization**.
-5. No nome da organização, digite `OmniX`.
-6. Escolha o plano **Free**.
-7. Clique em **Create organization**.
-8. Clique em **New project**.
-9. Em **Name**, digite `omnix-social`.
-10. Em **Database Password**, crie uma senha forte e guarde-a em um gerenciador de senhas. Essa senha não deve ser enviada na conversa.
-11. Em **Region**, escolha a região mais próxima disponível.
-12. Confirme que o plano exibido é **Free**.
-13. Clique em **Create new project**.
-14. Aguarde a preparação terminar.
+1. No Supabase, abra **Edge Functions**.
+2. Clique em **Secrets** ou **Manage secrets**.
+3. Crie estes segredos:
 
-### Parte 2 — Criar as tabelas e proteções
+| Nome | Valor |
+|---|---|
+| `TIKTOK_CLIENT_KEY` | Client key copiada do TikTok |
+| `TIKTOK_CLIENT_SECRET` | Client secret copiado do TikTok |
+| `OMNIX_APP_URL` | `https://omnix.lotusnegocios.com` |
+| `TIKTOK_APP_AUDITED` | `false` |
 
-1. No menu esquerdo do Supabase, clique em **SQL Editor**.
-2. Clique em **New query**.
-3. No computador, abra a pasta `OmniX`.
-4. Abra a pasta `supabase`.
-5. Abra a pasta `migrations`.
-6. Abra o arquivo `202607250001_initial_schema.sql` com o Bloco de Notas.
-7. Pressione `Ctrl + A` para selecionar tudo.
-8. Pressione `Ctrl + C` para copiar.
-9. Volte ao navegador, clique na área da nova consulta e pressione `Ctrl + V`.
-10. Clique em **Run**.
-11. Aguarde a mensagem de sucesso. Se aparecer erro, não repita a execução: copie apenas a mensagem do erro para a conversa.
+### Gerar os dois valores aleatórios
 
-### Parte 3 — Encontrar os dois dados públicos
+1. Abra o PowerShell.
+2. Execute `[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))`.
+3. Copie o resultado e crie `SOCIAL_TOKEN_ENCRYPTION_KEY` no Supabase.
+4. Execute o mesmo comando novamente para obter outro valor.
+5. Copie o novo resultado e crie `OMNIX_CRON_SECRET`.
+6. Guarde o segundo resultado temporariamente no gerenciador de senhas; ele será usado na próxima parte.
 
-Esses dois dados podem ser configurados no app. Não copie a chave `service_role` ou `secret`.
+Não troque `SOCIAL_TOKEN_ENCRYPTION_KEY` depois de conectar contas, pois os tokens existentes deixariam de ser legíveis.
 
-1. No topo do painel do projeto, procure o botão **Connect**. Se não aparecer, clique em **Project Settings** e depois em **API Keys**.
-2. Localize **Project URL** e copie o endereço que começa com `https://`.
-3. Localize a chave chamada **Publishable key**. Em projetos antigos ela pode aparecer como chave **anon public**.
-4. Não copie nenhuma chave marcada como `secret` ou `service_role`.
-5. Envie na conversa somente o **Project URL** e a **Publishable key** para que sejam configurados no localhost e na hospedagem.
+## Parte 5 — ativar o agendador a cada minuto
 
-### Limites gratuitos registrados em 25/07/2026
+1. No Supabase, volte ao **SQL Editor** e clique em **New query**.
+2. Abra `OmniX/supabase/setup/enable_tiktok_cron.sql` no computador.
+3. Copie o conteúdo para um editor temporário.
+4. Substitua `https://SEU-PROJETO.supabase.co` por `https://hbhfqfebqtytgmjmqdtr.supabase.co`.
+5. Substitua `COLE_AQUI_O_MESMO_OMNIX_CRON_SECRET_DAS_EDGE_FUNCTIONS` pelo valor de `OMNIX_CRON_SECRET`.
+6. Copie o SQL já ajustado, cole no SQL Editor e clique em **Run**.
+7. Feche o editor temporário sem salvar o segredo no repositório.
+8. No menu esquerdo, abra **Integrations** e depois **Cron**.
+9. Confirme que existe `omnix-tiktok-publisher` com frequência `* * * * *`.
 
-- Banco: 500 MB.
-- Arquivos: 1 GB.
-- Tráfego direto: 5 GB.
-- Tamanho máximo de cada arquivo: 50 MB.
-- O projeto pode pausar após uma semana sem atividade e ser reativado pelo painel.
+## Parte 6 — preparar o GitHub Pages
+
+1. Abra `https://github.com/new`.
+2. Em **Repository name**, digite `omnix-social`.
+3. Escolha **Public**. Isso mantém o GitHub Pages gratuito; o repositório não contém tokens nem segredos.
+4. Não marque opções para criar README, `.gitignore` ou licença.
+5. Clique em **Create repository**.
+6. Use as instruções do GitHub para enviar a pasta OmniX ou peça para concluir o envio durante uma sessão com o GitHub autenticado.
+
+### Configurar os dados públicos do build
+
+1. Dentro do repositório, clique em **Settings**.
+2. No menu esquerdo, abra **Secrets and variables** e depois **Actions**.
+3. Em **Repository secrets**, clique em **New repository secret**.
+4. Crie `NEXT_PUBLIC_SUPABASE_URL` com `https://hbhfqfebqtytgmjmqdtr.supabase.co`.
+5. Crie `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` com a chave publicável do Supabase. Não use `secret` nem `service_role`.
+6. Em **Variables**, crie `NEXT_PUBLIC_TIKTOK_AUDITED` com `false`.
+
+### Ativar Pages
+
+1. Ainda em **Settings**, abra **Pages**.
+2. Em **Build and deployment**, selecione **GitHub Actions**.
+3. Abra a aba **Actions** do repositório.
+4. O workflow **Publicar OmniX no GitHub Pages** deve iniciar após o envio à branch `main`.
+5. Aguarde o marcador verde.
+
+## Parte 7 — apontar o subdomínio
+
+O domínio raiz já aponta para GitHub Pages e não será alterado.
+
+1. Abra o painel onde o DNS de `lotusnegocios.com` é administrado.
+2. Clique em **Adicionar registro**.
+3. Escolha o tipo **CNAME**.
+4. Em nome/host, informe `omnix`.
+5. Em destino, informe o endereço padrão mostrado pelo GitHub Pages, normalmente `SEU-USUARIO.github.io`.
+6. Salve.
+7. Volte a **GitHub > Settings > Pages**.
+8. Em **Custom domain**, informe `omnix.lotusnegocios.com` e salve.
+9. Quando ficar disponível, marque **Enforce HTTPS**.
+
+## Parte 8 — autorizar URLs no Supabase
+
+1. No Supabase, abra **Authentication**.
+2. Clique em **URL Configuration**.
+3. Em **Site URL**, informe `https://omnix.lotusnegocios.com`.
+4. Em **Redirect URLs**, adicione `https://omnix.lotusnegocios.com/**`.
+5. Salve.
+
+## Parte 9 — primeiro teste real
+
+1. Abra `https://omnix.lotusnegocios.com`.
+2. Entre com seu e-mail pelo magic link.
+3. Abra **Conexões** e clique em **Conectar** no TikTok.
+4. Autorize no site oficial do TikTok.
+5. Confirme que o OmniX mostra o nome real da conta.
+6. Clique em **Criar post**.
+7. Selecione um MP4 curto, de preferência abaixo de 20 MB.
+8. Escreva a legenda.
+9. Escolha uma data pelo menos cinco minutos no futuro.
+10. Escolha manualmente **Somente eu**.
+11. Marque ou deixe desmarcadas as interações conforme desejar.
+12. Informe corretamente se há promoção de marca ou conteúdo gerado por IA.
+13. Marque a declaração obrigatória do TikTok.
+14. Clique em **Agendar post**.
+15. Após o horário, aguarde alguns minutos e atualize o OmniX.
+16. Confirme que o status virou **Publicado** e que o vídeo aparece como privado na conta TikTok.
+
+## Depois do teste
+
+Grave uma demonstração completa, envie a solicitação de auditoria do Direct Post no portal do TikTok e mantenha `TIKTOK_APP_AUDITED=false`. Somente depois da aprovação, altere `TIKTOK_APP_AUDITED` e a variável pública do GitHub para `true` e publique novamente.

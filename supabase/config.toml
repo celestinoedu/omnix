@@ -1,0 +1,11 @@
+project_id = "omnix-social"
+
+[functions.tiktok-auth]
+verify_jwt = false
+
+[functions.tiktok-creator-info]
+verify_jwt = false
+
+[functions.tiktok-publisher]
+verify_jwt = false
+

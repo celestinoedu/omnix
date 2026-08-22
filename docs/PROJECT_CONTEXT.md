@@ -1,10 +1,10 @@
 # Contexto permanente do projeto
 
-Última atualização: 25 de julho de 2026.
+Última atualização: 22 de agosto de 2026.
 
 ## Resumo
 
-OmniX Social é um aplicativo simples para conectar contas do Instagram, TikTok e YouTube, organizar conteúdo em um calendário e publicar automaticamente nas datas agendadas.
+OmniX Social é um aplicativo simples para conectar contas sociais, organizar conteúdo em um calendário e publicar automaticamente nas datas agendadas. O marco atual prioriza fazer o TikTok funcionar de ponta a ponta antes das outras redes.
 
 A referência de produto informada pelo proprietário é o Publer, mas o OmniX deve priorizar simplicidade, clareza e operação de baixo volume no free tier.
 

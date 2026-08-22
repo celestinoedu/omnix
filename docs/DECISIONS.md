@@ -1,13 +1,13 @@
 # Registro de decisões
 
-Última atualização: 25 de julho de 2026.
+Última atualização: 22 de agosto de 2026.
 
 Este registro é cumulativo. Decisões antigas não devem ser apagadas; quando substituídas, devem receber o estado **Substituída** e apontar para a nova decisão.
 
 ## D-001 — Zero custo como restrição principal
 
 - Data: 25/07/2026
-- Estado: Aceita
+- Estado: **Substituída por D-010**
 - Decisão: desenvolver e validar o MVP usando apenas recursos sem custo.
 - Motivo: premissa MASTER definida pelo proprietário.
 - Consequência: capacidade e volume terão limites; qualquer necessidade paga exige aprovação explícita.
@@ -75,3 +75,27 @@ Este registro é cumulativo. Decisões antigas não devem ser apagadas; quando s
 - Decisão: manter o comportamento local existente quando as variáveis Supabase não estiverem configuradas.
 - Motivo: preservar o protótipo aprovado enquanto a infraestrutura gratuita é ativada.
 - Consequência: a interface mostra “Modo demonstração”; depois da configuração, exige login e usa dados reais.
+
+## D-010 — Supabase Pro como único serviço pago
+
+- Data: 22/08/2026
+- Estado: Aceita
+- Decisão: autorizar o Supabase Pro como único custo recorrente do OmniX; manter os demais componentes em opções gratuitas.
+- Motivo: o proprietário já possui o plano Pro e quer concentrar nele autenticação, banco, arquivos, funções e agendamento.
+- Consequência: recursos incluídos no Pro podem ser usados, mas add-ons, excesso de cota e qualquer novo serviço pago continuam dependendo de autorização explícita.
+
+## D-011 — GitHub Pages e domínio próprio para a interface
+
+- Data: 22/08/2026
+- Estado: Aceita
+- Decisão: hospedar a interface estática no GitHub Pages e usar `omnix.lotusnegocios.com`, preservando o site principal em `lotusnegocios.com`.
+- Motivo: o domínio raiz já aponta para GitHub Pages e o subdomínio está disponível na verificação DNS de 22/08/2026.
+- Consequência: toda lógica secreta e dinâmica permanece nas Supabase Edge Functions; o navegador recebe apenas a URL e a chave publicável.
+
+## D-012 — Supabase Edge Functions e Cron para o TikTok
+
+- Data: 22/08/2026
+- Estado: Aceita
+- Decisão: executar OAuth, renovação cifrada de tokens, consulta do criador, envio e acompanhamento do TikTok em Edge Functions; disparar a fila com Supabase Cron.
+- Motivo: mantém segredos fora do GitHub Pages e concentra o backend no único serviço pago autorizado.
+- Consequência: a publicação real depende do cadastro e da aprovação do aplicativo no TikTok for Developers.

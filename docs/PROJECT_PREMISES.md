@@ -1,20 +1,20 @@
 # Premissas do projeto
 
-Última atualização: 25 de julho de 2026.
+Última atualização: 22 de agosto de 2026.
 
 ## Premissa MASTER
 
-**ZERO CUSTO.**
+**SUPABASE PRO COMO ÚNICO SERVIÇO PAGO.**
 
-O MVP deve operar sem cobrança enquanto estiver dentro dos limites dos free tiers escolhidos.
+O OmniX pode usar os recursos incluídos no Supabase Pro. A interface será hospedada gratuitamente no GitHub Pages e usará um subdomínio de `lotusnegocios.com`. Nenhum outro serviço pago, add-on ou cobrança variável deve ser ativado sem autorização explícita.
 
 Regras derivadas:
 
-- Não cadastrar cartão nem habilitar plano pago como parte do fluxo padrão.
-- Não ativar recurso que possa gerar cobrança variável sem autorização explícita.
-- Registrar os limites relevantes de cada serviço antes de adotá-lo.
-- Criar alertas ou travas de uso quando houver risco de ultrapassar um limite gratuito.
-- Reavaliar a arquitetura antes de crescer, pois zero custo não é garantia de escala ilimitada.
+- Supabase Pro está autorizado e é o custo recorrente previsto.
+- GitHub Pages e eventuais recursos auxiliares devem permanecer em camadas gratuitas.
+- Não ativar add-ons do Supabase nem qualquer outro serviço que gere cobrança sem autorização explícita.
+- Registrar os limites relevantes do plano Pro antes de depender deles.
+- Criar alertas ou travas quando houver risco de exceder cotas incluídas e gerar cobrança variável.
 
 ## Produto
 

@@ -1,10 +1,10 @@
 # Estado atual do projeto
 
-Última atualização: 25 de julho de 2026.
+Última atualização: 22 de agosto de 2026.
 
 ## Etapa atual
 
-**Fundação de backend publicada / aguardando validação do magic link pelo usuário.**
+**Integração TikTok implementada localmente / aguardando configuração e aprovação externas.**
 
 ## Implementado
 
@@ -35,51 +35,72 @@
 - Endpoint de autenticação validado com resposta HTTP 200.
 - Tela de login real validada no localhost.
 - Versão 4 publicada com a revisão 1 das variáveis Supabase.
+- Calendário deixou de ser fixo em julho de 2026 e agora navega por meses reais.
+- Formulário específico para vídeo TikTok com data completa e fuso do navegador.
+- Validação de formato, 50 MB, dimensões e duração máxima informada pela conta.
+- Interface oficial de privacidade sem valor padrão, interações, conteúdo comercial, IA e consentimento.
+- Estado real da conexão TikTok lido de `social_accounts`; Instagram e YouTube aparecem como planejados, não conectados.
+- OAuth TikTok com proteção `state`, troca server-side e revogação.
+- Tokens TikTok cifrados em AES-256-GCM e renovados no backend.
+- Consulta obrigatória de `creator_info` antes de abrir o agendamento e novamente antes de publicar.
+- Publicador TikTok com reivindicação transacional, registro de tentativa, upload e consulta de status.
+- Restrição segura a `SELF_ONLY` enquanto o aplicativo não estiver auditado pelo TikTok.
+- Exportação estática do Next.js e workflow de GitHub Pages.
+- Domínio planejado e livre: `omnix.lotusnegocios.com`.
 
 ## Simulado
 
-- Conexão e desconexão das contas sociais.
 - Perfil da usuária exibido na interface.
 - Estatísticas de publicações.
-- Upload de foto ou vídeo.
 - Estados de posts publicados.
+- Instagram e YouTube.
+
+## Implementado, mas ainda não ativado no ambiente remoto
+
+- Migração TikTok no Supabase.
+- Edge Functions `tiktok-auth`, `tiktok-creator-info` e `tiktok-publisher`.
+- Segredos do TikTok, criptografia e cron.
+- Workflow e domínio do GitHub Pages.
 
 ## Ainda não implementado
 
 - Teste ponta a ponta do login, sincronização e upload contra o Supabase remoto.
 - OAuth real de Meta/Instagram.
-- OAuth real de TikTok.
 - OAuth real de Google/YouTube.
-- Publicação automática.
-- Agendador no servidor.
-- Retentativas e acompanhamento de erros.
+- Retentativas automáticas após falhas permanentes; o MVP evita repetição para não duplicar vídeos.
 - Notificações.
-- Configuração de fuso horário pelo usuário.
 - Edição, duplicação e cancelamento reais de posts.
 
 ## Dependências externas
 
-- Criação dos aplicativos nos portais de Meta, TikTok e Google.
-- Configuração das URLs de OAuth após definir a infraestrutura real.
-- Aprovação das permissões de publicação quando exigida.
+- Criação do aplicativo no TikTok for Developers.
+- Liberação dos produtos Login Kit e Content Posting API e do escopo `video.publish`.
+- Cadastro exato da URL de callback do Supabase.
+- Auditoria do Direct Post para sair de `SELF_ONLY` e publicar publicamente.
+- Criação de um repositório GitHub do OmniX e configuração do Pages.
+- CNAME DNS de `omnix.lotusnegocios.com` para a conta GitHub do proprietário.
 - Contas sociais do tipo aceito pelas APIs.
 
 ## Próximo marco recomendado
 
-Ativar e validar a fundação já implementada:
+Ativar e validar o TikTok já implementado:
 
-1. Proprietário testa o magic link com seu e-mail.
-2. Testar salvamento, sincronização e upload.
-3. Configurar fuso horário na interface.
-4. Integrar primeiro o YouTube, por oferecer um fluxo de upload oficial bem documentado.
-5. Implementar o worker de publicação idempotente.
-6. Validar o fluxo completo antes de adicionar Instagram e TikTok.
+1. Criar o aplicativo no TikTok for Developers e adicionar os produtos exigidos.
+2. Aplicar a migração e publicar as três Edge Functions.
+3. Configurar os seis segredos do backend e o Cron.
+4. Conectar a conta TikTok pelo OmniX.
+5. Agendar um vídeo de teste como `SELF_ONLY` e confirmar o ciclo completo.
+6. Gravar a demonstração e solicitar auditoria do TikTok para publicação pública.
+7. Publicar o site no GitHub Pages e apontar o subdomínio.
 
 ## Validação mais recente
 
 - `npm run build`: aprovado.
-- `npm audit --audit-level=high`: zero vulnerabilidades encontradas.
-- Teste em navegador: dashboard e modal de criação aprovados em modo demonstração.
+- `npm run lint`: aprovado.
+- `npm audit --audit-level=high`: zero vulnerabilidades encontradas em 22/08/2026.
+- `deno check` nas três Edge Functions: aprovado.
+- Teste Playwright em navegador: calendário atual, modal, persistência demonstrativa e layout móvel aprovados.
+- Screenshot móvel: `output/playwright/omnix-mobile.png` (artefato local ignorado pelo Git).
 - Teste em navegador: tela de login Supabase aprovada no localhost.
 - Supabase Auth `/health`: HTTP 200.
 - Deploy privado da versão 4: concluído com `env_set_revision` 1.

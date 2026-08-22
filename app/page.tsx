@@ -1,55 +1,33 @@
 "use client";
 
 import {
-  CalendarDays,
-  Check,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CircleHelp,
-  Clock3,
-  Home,
-  Instagram,
-  LayoutGrid,
-  Menu,
-  MoreHorizontal,
-  Plus,
-  Search,
-  Settings,
-  Sparkles,
-  UploadCloud,
-  Video,
-  X,
-  Youtube,
+  CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3,
+  Home, Instagram, LayoutGrid, LoaderCircle, Menu, MoreHorizontal, Plus, Search,
+  Settings, Sparkles, UploadCloud, Video, X, Youtube,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type Network = "Instagram" | "TikTok" | "YouTube";
-type Status = "Agendado" | "Rascunho" | "Publicado";
-type Post = {
-  id: number;
-  title: string;
-  network: Network;
-  day: number;
-  time: string;
-  status: Status;
-  color: string;
+type Status = "Agendado" | "Processando" | "Publicado" | "Falhou" | "Rascunho";
+type Post = { id: string; title: string; network: Network; scheduledAt: string; status: Status; color: string };
+type TikTokAccount = { id: string; display_name: string; status: string };
+type CreatorInfo = {
+  creator_nickname: string; creator_username: string; privacy_level_options: string[];
+  comment_disabled: boolean; duet_disabled: boolean; stitch_disabled: boolean;
+  max_video_post_duration_sec: number;
 };
 
-const seedPosts: Post[] = [
-  { id: 1, title: "5 hábitos para uma semana produtiva", network: "Instagram", day: 6, time: "09:00", status: "Agendado", color: "sun" },
-  { id: 2, title: "POV: você descobriu esse truque", network: "TikTok", day: 8, time: "18:30", status: "Agendado", color: "sky" },
-  { id: 3, title: "Tutorial completo: do zero ao resultado", network: "YouTube", day: 11, time: "14:00", status: "Agendado", color: "violet" },
-  { id: 4, title: "Bastidores do nosso processo criativo", network: "Instagram", day: 15, time: "10:00", status: "Rascunho", color: "peach" },
-  { id: 5, title: "3 erros que você precisa evitar", network: "TikTok", day: 20, time: "19:00", status: "Agendado", color: "mint" },
-  { id: 6, title: "Resumo da semana + novidades", network: "YouTube", day: 25, time: "16:00", status: "Agendado", color: "rose" },
-];
-
+const colors = ["sun", "sky", "violet", "peach", "mint", "rose"];
 const weekDays = ["SEG", "TER", "QUA", "QUI", "SEX", "SÁB", "DOM"];
-const calendarDays = [27, 28, 29, 30, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31];
+const privacyLabels: Record<string, string> = {
+  PUBLIC_TO_EVERYONE: "Todos", MUTUAL_FOLLOW_FRIENDS: "Amigos",
+  FOLLOWER_OF_CREATOR: "Seguidores", SELF_ONLY: "Somente eu",
+};
+const isTikTokAudited = process.env.NEXT_PUBLIC_TIKTOK_AUDITED === "true";
+const seedPosts: Post[] = [{ id: "demo-1", title: "POV: você descobriu esse truque", network: "TikTok", scheduledAt: new Date(Date.now() + 86400000).toISOString(), status: "Agendado", color: "sky" }];
 
 function NetworkIcon({ network, size = 16 }: { network: Network; size?: number }) {
   if (network === "Instagram") return <Instagram size={size} />;
@@ -57,351 +35,229 @@ function NetworkIcon({ network, size = 16 }: { network: Network; size?: number }
   return <Video size={size} />;
 }
 
+function monthCells(month: Date) {
+  const first = new Date(month.getFullYear(), month.getMonth(), 1);
+  const leading = (first.getDay() + 6) % 7;
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(month.getFullYear(), month.getMonth(), index - leading + 1);
+    return { date, currentMonth: date.getMonth() === month.getMonth() };
+  });
+}
+
+function sameLocalDay(iso: string, date: Date) {
+  const value = new Date(iso);
+  return value.getFullYear() === date.getFullYear() && value.getMonth() === date.getMonth() && value.getDate() === date.getDate();
+}
+
+function localDateTimeValue(date = new Date(Date.now() + 60 * 60 * 1000)) {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+}
+
+async function readVideoMetadata(file: File) {
+  return new Promise<{ duration: number; width: number; height: number }>((resolve, reject) => {
+    const video = document.createElement("video");
+    const objectUrl = URL.createObjectURL(file);
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      const result = { duration: video.duration, width: video.videoWidth, height: video.videoHeight };
+      URL.revokeObjectURL(objectUrl); resolve(result);
+    };
+    video.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Vídeo inválido.")); };
+    video.src = objectUrl;
+  });
+}
+
 export default function Dashboard() {
   const [posts, setPosts] = useState<Post[]>(isSupabaseConfigured ? [] : seedPosts);
   const [filter, setFilter] = useState<"Todas" | Network>("Todas");
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [composerOpen, setComposerOpen] = useState(false);
   const [connectionsOpen, setConnectionsOpen] = useState(false);
-  const [connected, setConnected] = useState<Network[]>(["Instagram", "TikTok", "YouTube"]);
   const [mobileMenu, setMobileMenu] = useState(false);
   const [toast, setToast] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(isSupabaseConfigured);
   const [dataLoading, setDataLoading] = useState(false);
+  const [connectionLoading, setConnectionLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [tiktokAccount, setTikTokAccount] = useState<TikTokAccount | null>(null);
+  const [creator, setCreator] = useState<CreatorInfo | null>(null);
+  const [commercial, setCommercial] = useState(false);
+  const [brandedContent, setBrandedContent] = useState(false);
+
+  const showToast = useCallback((message: string) => {
+    setToast(message); window.setTimeout(() => setToast(""), 4500);
+  }, []);
+
+  const loadAccounts = useCallback(async () => {
+    const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+    const { data } = await supabase.from("social_accounts").select("id,display_name,status").eq("platform", "TikTok").eq("status", "active").limit(1).maybeSingle();
+    setTikTokAccount(data as TikTokAccount | null);
+  }, []);
+
+  const loadPosts = useCallback(async () => {
+    const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+    setDataLoading(true);
+    const { data, error } = await supabase.from("posts").select("id,title,scheduled_at_utc,status,post_destinations(platform,status)").order("scheduled_at_utc", { ascending: true });
+    if (error) showToast("Não foi possível carregar os posts.");
+    else setPosts((data ?? []).map((item, index) => {
+      const destination = Array.isArray(item.post_destinations) ? item.post_destinations[0] : item.post_destinations;
+      const rawStatus = destination?.status ?? item.status;
+      const status: Status = rawStatus === "published" ? "Publicado" : rawStatus === "processing" ? "Processando" : rawStatus === "failed" ? "Falhou" : item.status === "draft" ? "Rascunho" : "Agendado";
+      return { id: item.id, title: item.title, network: (destination?.platform ?? "TikTok") as Network, scheduledAt: item.scheduled_at_utc, status, color: colors[index % colors.length] };
+    }));
+    setDataLoading(false);
+  }, [showToast]);
 
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      const supabase = getSupabaseBrowserClient();
-      if (!supabase) return;
-
-      supabase.auth.getSession().then(({ data }) => {
-        setUser(data.session?.user ?? null);
-        setAuthLoading(false);
-      });
-
-      const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-        setUser(session?.user ?? null);
-        setAuthLoading(false);
-      });
-
-      return () => listener.subscription.unsubscribe();
+    if (!isSupabaseConfigured) {
+      const saved = localStorage.getItem("omnix-posts"); if (saved) setPosts(JSON.parse(saved)); return;
     }
-
-    const saved = localStorage.getItem("omnix-posts");
-    if (saved) setPosts(JSON.parse(saved));
+    const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+    supabase.auth.getSession().then(({ data }) => { setUser(data.session?.user ?? null); setAuthLoading(false); });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { setUser(session?.user ?? null); setAuthLoading(false); });
+    return () => listener.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !user) return;
-    void loadPosts();
-  }, [user]);
-
-  async function loadPosts() {
-    const supabase = getSupabaseBrowserClient();
-    if (!supabase) return;
-
-    setDataLoading(true);
-    const { data, error } = await supabase
-      .from("posts")
-      .select("id,title,scheduled_at_utc,status,post_destinations(platform)")
-      .order("scheduled_at_utc", { ascending: true });
-
-    if (error) {
-      setToast("Não foi possível carregar os posts.");
-      setDataLoading(false);
-      return;
+    if (!user) return;
+    void Promise.all([loadPosts(), loadAccounts()]);
+    const result = new URLSearchParams(window.location.search).get("tiktok");
+    if (result) {
+      const messages: Record<string, string> = { connected: "Conta TikTok conectada com sucesso!", denied: "A autorização do TikTok foi cancelada.", missing_scope: "O TikTok não liberou a permissão para publicar.", invalid_state: "A conexão expirou. Tente novamente.", error: "Não foi possível concluir a conexão com o TikTok." };
+      showToast(messages[result] ?? "Retorno do TikTok recebido.");
+      window.history.replaceState({}, "", window.location.pathname);
     }
+  }, [user, loadPosts, loadAccounts, showToast]);
 
-    const colors = ["sun", "sky", "violet", "peach", "mint", "rose"];
-    const mapped = (data ?? []).map((item, index) => {
-      const scheduled = new Date(item.scheduled_at_utc);
-      const destination = Array.isArray(item.post_destinations) ? item.post_destinations[0] : item.post_destinations;
-      return {
-        id: Number.parseInt(String(item.id).replaceAll("-", "").slice(0, 12), 16),
-        databaseId: item.id,
-        title: item.title,
-        network: (destination?.platform ?? "Instagram") as Network,
-        day: Number(new Intl.DateTimeFormat("pt-BR", { day: "numeric", timeZone: "America/Sao_Paulo" }).format(scheduled)),
-        time: new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Sao_Paulo" }).format(scheduled),
-        status: item.status === "published" ? "Publicado" : item.status === "draft" ? "Rascunho" : "Agendado",
-        color: colors[index % colors.length],
-      } as Post;
-    });
-    setPosts(mapped);
-    setDataLoading(false);
+  const visiblePosts = useMemo(() => posts.filter(post => filter === "Todas" || post.network === filter), [posts, filter]);
+  const cells = useMemo(() => monthCells(calendarMonth), [calendarMonth]);
+  const postsInMonth = visiblePosts.filter(post => { const date = new Date(post.scheduledAt); return date.getFullYear() === calendarMonth.getFullYear() && date.getMonth() === calendarMonth.getMonth(); }).length;
+  const monthLabel = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(calendarMonth);
+
+  async function connectTikTok() {
+    const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+    setConnectionLoading(true);
+    const { data, error } = await supabase.functions.invoke("tiktok-auth", { body: { action: "start" } });
+    setConnectionLoading(false);
+    if (error || !data?.authorizationUrl) return showToast(data?.error || "A integração TikTok ainda não está configurada no servidor.");
+    window.location.assign(data.authorizationUrl);
   }
 
-  const visiblePosts = useMemo(
-    () => posts.filter((post) => filter === "Todas" || post.network === filter),
-    [posts, filter],
-  );
+  async function disconnectTikTok() {
+    const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+    setConnectionLoading(true);
+    const { error } = await supabase.functions.invoke("tiktok-auth", { body: { action: "disconnect" } });
+    setConnectionLoading(false);
+    if (error) return showToast("Não foi possível desconectar a conta TikTok.");
+    await loadAccounts(); showToast("Conta TikTok desconectada.");
+  }
+
+  async function openComposer() {
+    if (!isSupabaseConfigured) { setComposerOpen(true); return; }
+    if (!tiktokAccount) { setConnectionsOpen(true); showToast("Conecte sua conta TikTok antes de agendar."); return; }
+    const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+    setDataLoading(true);
+    const { data, error } = await supabase.functions.invoke("tiktok-creator-info");
+    setDataLoading(false);
+    if (error || !data?.creator) return showToast(data?.error || "Não foi possível consultar as opções da conta TikTok.");
+    setCreator(data.creator); setCommercial(false); setBrandedContent(false); setComposerOpen(true);
+  }
 
   async function savePost(form: FormData) {
-    const network = form.get("network") as Network;
-    const title = String(form.get("title") || "Novo conteúdo");
-    const day = Number(form.get("day") || 18);
-    const time = String(form.get("time") || "12:00");
+    const title = String(form.get("title") || "").trim();
+    const scheduledValue = String(form.get("scheduledAt") || "");
     const mediaFile = form.get("media");
+    if (!title || !scheduledValue) return showToast("Preencha a legenda e a data do post.");
 
     if (isSupabaseConfigured && user) {
-      const supabase = getSupabaseBrowserClient();
-      if (!supabase) return;
+      if (!tiktokAccount || !creator) return showToast("Conecte e consulte sua conta TikTok novamente.");
+      if (!(mediaFile instanceof File) || mediaFile.size === 0) return showToast("Escolha um vídeo para o TikTok.");
+      if (mediaFile.size > 50 * 1024 * 1024) return showToast("O vídeo deve ter no máximo 50 MB.");
+      if (!["video/mp4", "video/quicktime", "video/webm"].includes(mediaFile.type)) return showToast("Use um vídeo MP4, MOV ou WEBM.");
+      const scheduledAt = new Date(scheduledValue);
+      if (!Number.isFinite(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now()) return showToast("Escolha uma data e horário futuros.");
+      const privacy = String(form.get("privacy") || "");
+      if (!privacy) return showToast("Escolha manualmente quem poderá ver o post.");
+      if (!isTikTokAudited && privacy !== "SELF_ONLY") return showToast("Durante a homologação, a privacidade deve ser Somente eu.");
+      const brandOrganic = form.get("brandOrganic") === "on";
+      const brandContent = form.get("brandContent") === "on";
+      if (commercial && !brandOrganic && !brandContent) return showToast("Informe se o conteúdo promove sua marca, outra marca ou ambas.");
+      if (brandContent && privacy === "SELF_ONLY") return showToast("Parceria paga não pode usar a privacidade Somente eu.");
+      if (form.get("consent") !== "on") return showToast("Confirme a declaração de uso de música do TikTok.");
 
-      let mediaAssetId: string | null = null;
-      if (mediaFile instanceof File && mediaFile.size > 0) {
-        if (mediaFile.size > 50 * 1024 * 1024) {
-          setToast("O arquivo deve ter no máximo 50 MB no plano gratuito.");
-          return;
-        }
-
-        const safeName = mediaFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
-        const storagePath = `${user.id}/${crypto.randomUUID()}-${safeName}`;
-        const { error: uploadError } = await supabase.storage.from("post-media").upload(storagePath, mediaFile, {
-          contentType: mediaFile.type,
-          upsert: false,
-        });
-
-        if (uploadError) {
-          setToast("Não foi possível enviar a mídia.");
-          return;
-        }
-
-        const { data: asset, error: assetError } = await supabase
-          .from("media_assets")
-          .insert({
-            user_id: user.id,
-            storage_path: storagePath,
-            original_name: mediaFile.name,
-            mime_type: mediaFile.type,
-            size_bytes: mediaFile.size,
-          })
-          .select("id")
-          .single();
-
-        if (assetError) {
-          await supabase.storage.from("post-media").remove([storagePath]);
-          setToast("Não foi possível registrar a mídia.");
-          return;
-        }
+      setSaving(true);
+      const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+      let storagePath = "";
+      let mediaAssetId = "";
+      try {
+        const metadata = await readVideoMetadata(mediaFile);
+        if (metadata.duration > creator.max_video_post_duration_sec) throw new Error(`Este vídeo excede o limite de ${creator.max_video_post_duration_sec} segundos da conta.`);
+        if (metadata.width < 360 || metadata.height < 360 || metadata.width > 4096 || metadata.height > 4096) throw new Error("O vídeo deve ter largura e altura entre 360 e 4096 pixels.");
+        storagePath = `${user.id}/${crypto.randomUUID()}-${mediaFile.name.replace(/[^a-zA-Z0-9._-]/g, "-")}`;
+        const { error: uploadError } = await supabase.storage.from("post-media").upload(storagePath, mediaFile, { contentType: mediaFile.type, upsert: false });
+        if (uploadError) throw new Error("Não foi possível enviar o vídeo.");
+        const { data: asset, error: assetError } = await supabase.from("media_assets").insert({ user_id: user.id, storage_path: storagePath, original_name: mediaFile.name, mime_type: mediaFile.type, size_bytes: mediaFile.size, duration_seconds: metadata.duration, width: metadata.width, height: metadata.height }).select("id").single();
+        if (assetError || !asset) throw new Error("Não foi possível registrar o vídeo.");
         mediaAssetId = asset.id;
-      }
-
-      const scheduledAt = new Date(`2026-07-${String(day).padStart(2, "0")}T${time}:00-03:00`).toISOString();
-      const { data: post, error: postError } = await supabase
-        .from("posts")
-        .insert({
-          user_id: user.id,
-          media_asset_id: mediaAssetId,
-          title,
-          caption: title,
-          scheduled_at_utc: scheduledAt,
-          timezone: "America/Sao_Paulo",
-          status: "scheduled",
-        })
-        .select("id")
-        .single();
-
-      if (postError) {
-        setToast("Não foi possível salvar o agendamento.");
-        return;
-      }
-
-      const { error: destinationError } = await supabase.from("post_destinations").insert({
-        post_id: post.id,
-        platform: network,
-        status: "pending",
-      });
-
-      if (destinationError) {
-        await supabase.from("posts").delete().eq("id", post.id);
-        setToast("Não foi possível definir a rede social.");
-        return;
-      }
-
-      await loadPosts();
-      setComposerOpen(false);
-      setToast("Post salvo no banco com sucesso!");
-      setTimeout(() => setToast(""), 3000);
+        const { data: post, error: postError } = await supabase.from("posts").insert({ user_id: user.id, media_asset_id: asset.id, title: title.slice(0, 200), caption: title.slice(0, 2200), scheduled_at_utc: scheduledAt.toISOString(), timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "America/Sao_Paulo", status: "scheduled" }).select("id").single();
+        if (postError || !post) throw new Error("Não foi possível salvar o agendamento.");
+        const { error: destinationError } = await supabase.from("post_destinations").insert({
+          post_id: post.id, social_account_id: tiktokAccount.id, platform: "TikTok", status: "pending",
+          platform_options: { privacy_level: privacy, allow_comment: form.get("allowComment") === "on", allow_duet: form.get("allowDuet") === "on", allow_stitch: form.get("allowStitch") === "on", brand_organic: brandOrganic, brand_content: brandContent, is_aigc: form.get("isAigc") === "on", consent_at: new Date().toISOString() },
+        });
+        if (destinationError) { await supabase.from("posts").delete().eq("id", post.id); throw new Error("Não foi possível preparar o destino TikTok."); }
+        await loadPosts(); setComposerOpen(false); showToast("Post do TikTok agendado com sucesso!");
+      } catch (error) {
+        if (mediaAssetId) await supabase.from("media_assets").delete().eq("id", mediaAssetId);
+        if (storagePath) await supabase.storage.from("post-media").remove([storagePath]);
+        showToast(error instanceof Error ? error.message : "Não foi possível agendar o post.");
+      } finally { setSaving(false); }
       return;
     }
 
-    const newPost: Post = {
-      id: Date.now(),
-      title,
-      network,
-      day,
-      time,
-      status: "Agendado",
-      color: ["sun", "sky", "violet", "peach", "mint", "rose"][posts.length % 6],
-    };
-    const next = [...posts, newPost];
-    setPosts(next);
-    localStorage.setItem("omnix-posts", JSON.stringify(next));
-    setComposerOpen(false);
-    setToast("Post agendado com sucesso!");
-    setTimeout(() => setToast(""), 3000);
+    const newPost: Post = { id: String(Date.now()), title, network: "TikTok", scheduledAt: new Date(scheduledValue).toISOString(), status: "Agendado", color: colors[posts.length % colors.length] };
+    const next = [...posts, newPost]; setPosts(next); localStorage.setItem("omnix-posts", JSON.stringify(next)); setComposerOpen(false); showToast("Demonstração salva neste navegador.");
   }
 
-  async function signOut() {
-    await getSupabaseBrowserClient()?.auth.signOut();
-  }
+  async function signOut() { await getSupabaseBrowserClient()?.auth.signOut(); }
+  if (authLoading) return <main className="auth-page"><div className="auth-loader"><Sparkles /><span>Preparando seu espaço...</span></div></main>;
+  if (isSupabaseConfigured && !user) return <AuthGate />;
 
-  function toggleConnection(network: Network) {
-    setConnected((current) =>
-      current.includes(network) ? current.filter((item) => item !== network) : [...current, network],
-    );
-  }
-
-  if (authLoading) {
-    return <main className="auth-page"><div className="auth-loader"><Sparkles /><span>Preparando seu espaço...</span></div></main>;
-  }
-
-  if (isSupabaseConfigured && !user) {
-    return <AuthGate />;
-  }
-
+  const connectedCount = tiktokAccount ? 1 : 0;
   return (
     <main className="app-shell">
       <aside className={`sidebar ${mobileMenu ? "open" : ""}`}>
-        <div className="brand">
-          <span className="brand-mark"><Sparkles size={20} /></span>
-          <span>OmniX</span>
-          <button className="mobile-close" onClick={() => setMobileMenu(false)} aria-label="Fechar menu"><X /></button>
-        </div>
-        <nav>
-          <a className="active" href="#"><Home /> Visão geral</a>
-          <a href="#calendario"><CalendarDays /> Calendário</a>
-          <a href="#conteudos"><LayoutGrid /> Conteúdos <span className="nav-count">{posts.length}</span></a>
-          <button onClick={() => setConnectionsOpen(true)}><UploadCloud /> Conexões <span className="nav-count">{connected.length}</span></button>
-        </nav>
-        <div className="sidebar-bottom">
-          <a href="#ajuda"><CircleHelp /> Central de ajuda</a>
-          <a href="#config"><Settings /> Configurações</a>
-          <div className="profile">
-            <div className="avatar">MS</div>
-            <div><strong>{user?.email?.split("@")[0] ?? "Marina Silva"}</strong><small>{isSupabaseConfigured ? "Dados sincronizados" : "Modo demonstração"}</small></div>
-            {user ? <button className="profile-more" onClick={signOut} title="Sair"><MoreHorizontal size={18} /></button> : <MoreHorizontal size={18} />}
-          </div>
-        </div>
+        <div className="brand"><span className="brand-mark"><Sparkles size={20} /></span><span>OmniX</span><button className="mobile-close" onClick={() => setMobileMenu(false)} aria-label="Fechar menu"><X /></button></div>
+        <nav><a className="active" href="#"><Home /> Visão geral</a><a href="#calendario"><CalendarDays /> Calendário</a><a href="#conteudos"><LayoutGrid /> Conteúdos <span className="nav-count">{posts.length}</span></a><button onClick={() => setConnectionsOpen(true)}><UploadCloud /> Conexões <span className="nav-count">{connectedCount}</span></button></nav>
+        <div className="sidebar-bottom"><a href="#ajuda"><CircleHelp /> Central de ajuda</a><a href="#config"><Settings /> Configurações</a><div className="profile"><div className="avatar">{user?.email?.slice(0, 2).toUpperCase() ?? "MS"}</div><div><strong>{user?.email?.split("@")[0] ?? "Marina Silva"}</strong><small>{isSupabaseConfigured ? "Dados sincronizados" : "Modo demonstração"}</small></div>{user ? <button className="profile-more" onClick={signOut} title="Sair"><MoreHorizontal size={18} /></button> : <MoreHorizontal size={18} />}</div></div>
       </aside>
-
       <section className="content">
-        <header className="topbar">
-          <button className="menu-button" onClick={() => setMobileMenu(true)} aria-label="Abrir menu"><Menu /></button>
-          <div className="search"><Search size={18} /><input aria-label="Buscar conteúdo" placeholder="Buscar conteúdo..." /><kbd>⌘ K</kbd></div>
-          <div className="top-actions">
-            <button className="icon-button" aria-label="Ajuda"><CircleHelp size={20} /></button>
-            <button className="primary" onClick={() => setComposerOpen(true)}><Plus size={18} /> Criar post</button>
-          </div>
-        </header>
-
+        <header className="topbar"><button className="menu-button" onClick={() => setMobileMenu(true)} aria-label="Abrir menu"><Menu /></button><div className="search"><Search size={18} /><input aria-label="Buscar conteúdo" placeholder="Buscar conteúdo..." /><kbd>⌘ K</kbd></div><div className="top-actions"><button className="icon-button" aria-label="Ajuda"><CircleHelp size={20} /></button><button className="primary" onClick={openComposer} disabled={dataLoading}><Plus size={18} /> Criar post</button></div></header>
         <div className="workspace">
-          <div className="welcome-row">
-            <div>
-              <p className="eyebrow">SÁBADO, 25 DE JULHO</p>
-              <h1>Bom dia, {user?.email?.split("@")[0] ?? "Marina"} <span>👋</span></h1>
-              <p>Organize sua presença digital, sem complicação.</p>
-            </div>
-            <button className="secondary" onClick={() => setConnectionsOpen(true)}>
-              <span className="status-dot" /> {connected.length} contas conectadas <ChevronDown size={16} />
-            </button>
-          </div>
-
-          <section className="stats-grid">
-            <article><div className="stat-icon blue"><CalendarDays /></div><div><span>Agendados</span><strong>{posts.filter(p => p.status === "Agendado").length}</strong><small>Próximos 30 dias</small></div><span className="trend">+3</span></article>
-            <article><div className="stat-icon green"><Check /></div><div><span>Publicados</span><strong>24</strong><small>Este mês</small></div><span className="trend">+18%</span></article>
-            <article><div className="stat-icon amber"><Clock3 /></div><div><span>Economia de tempo</span><strong>8h</strong><small>Este mês</small></div><span className="trend">+2h</span></article>
+          <div className="welcome-row"><div><p className="eyebrow">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" }).format(new Date()).toUpperCase()}</p><h1>Olá, {user?.email?.split("@")[0] ?? "Marina"} <span>👋</span></h1><p>Agende seus vídeos no TikTok, sem complicação.</p></div><button className="secondary" onClick={() => setConnectionsOpen(true)}><span className={`status-dot ${connectedCount ? "" : "offline"}`} /> {connectedCount ? "TikTok conectado" : "Conectar TikTok"} <ChevronDown size={16} /></button></div>
+          <section className="stats-grid"><article><div className="stat-icon blue"><CalendarDays /></div><div><span>Agendados</span><strong>{posts.filter(p => p.status === "Agendado").length}</strong><small>Na fila</small></div></article><article><div className="stat-icon green"><Check /></div><div><span>Publicados</span><strong>{posts.filter(p => p.status === "Publicado").length}</strong><small>Confirmados pelo TikTok</small></div></article><article><div className="stat-icon amber"><Clock3 /></div><div><span>Processando</span><strong>{posts.filter(p => p.status === "Processando").length}</strong><small>Enviados ao TikTok</small></div></article></section>
+          <section className="calendar-card" id="calendario"><div className="calendar-header"><div><div className="month-nav"><h2 className="capitalize">{monthLabel}</h2><button aria-label="Mês anterior" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}><ChevronLeft /></button><button aria-label="Próximo mês" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}><ChevronRight /></button><button className="today" onClick={() => setCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>Hoje</button></div><p>{dataLoading ? "Carregando conteúdos..." : `${postsInMonth} conteúdos neste calendário`}</p></div><div className="filters">{(["Todas", "TikTok"] as const).map(item => <button key={item} className={filter === item ? "selected" : ""} onClick={() => setFilter(item)}>{item !== "Todas" && <NetworkIcon network={item} />} {item}</button>)}</div></div>
+            <div className="calendar">{weekDays.map(day => <div className="weekday" key={day}>{day}</div>)}{cells.map(({ date, currentMonth }, index) => { const dayPosts = visiblePosts.filter(post => sameLocalDay(post.scheduledAt, date)); const today = sameLocalDay(new Date().toISOString(), date); return <div className={`day ${currentMonth ? "" : "muted"} ${today ? "current" : ""}`} key={index}><span className="day-number">{date.getDate()}</span>{dayPosts.map(post => <button className={`post ${post.color}`} key={post.id} title={`${post.title} — ${post.status}`}><span className="post-network"><NetworkIcon network={post.network} size={13} /> {new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(post.scheduledAt))}</span><strong>{post.title}</strong></button>)}{currentMonth && <button className="quick-add" onClick={openComposer} aria-label={`Adicionar no dia ${date.getDate()}`}><Plus size={14} /></button>}</div>; })}</div>
           </section>
-
-          <section className="calendar-card" id="calendario">
-            <div className="calendar-header">
-              <div>
-                <div className="month-nav"><h2>Julho 2026</h2><button aria-label="Mês anterior"><ChevronLeft /></button><button aria-label="Próximo mês"><ChevronRight /></button><button className="today">Hoje</button></div>
-                <p>{dataLoading ? "Carregando conteúdos..." : `${visiblePosts.length} conteúdos neste calendário`}</p>
-              </div>
-              <div className="filters">
-                {(["Todas", "Instagram", "TikTok", "YouTube"] as const).map((item) => (
-                  <button key={item} className={filter === item ? "selected" : ""} onClick={() => setFilter(item)}>
-                    {item !== "Todas" && <NetworkIcon network={item} />} {item}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="calendar">
-              {weekDays.map((day) => <div className="weekday" key={day}>{day}</div>)}
-              {calendarDays.map((day, index) => {
-                const muted = index < 4 || index > 34;
-                const dayPosts = muted ? [] : visiblePosts.filter((post) => post.day === day);
-                return (
-                  <div className={`day ${muted ? "muted" : ""} ${day === 25 && !muted ? "current" : ""}`} key={`${day}-${index}`}>
-                    <span className="day-number">{day}</span>
-                    {dayPosts.map((post) => (
-                      <button className={`post ${post.color}`} key={post.id} title={post.title}>
-                        <span className="post-network"><NetworkIcon network={post.network} size={13} /> {post.time}</span>
-                        <strong>{post.title}</strong>
-                      </button>
-                    ))}
-                    {!muted && <button className="quick-add" onClick={() => setComposerOpen(true)} aria-label={`Adicionar no dia ${day}`}><Plus size={14} /></button>}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          <section className="bottom-grid" id="conteudos">
-            <article className="upcoming">
-              <div className="section-title"><div><h3>Próximos posts</h3><p>Sua fila está organizada.</p></div><button>Ver todos <ChevronRight size={15} /></button></div>
-              {posts.filter(p => p.status === "Agendado").slice(0, 3).map(post => (
-                <div className="queue-item" key={post.id}>
-                  <div className={`thumb ${post.color}`}><NetworkIcon network={post.network} size={22} /></div>
-                  <div className="queue-copy"><strong>{post.title}</strong><span><NetworkIcon network={post.network} size={13} /> {post.network} · {post.day} jul, {post.time}</span></div>
-                  <span className="scheduled">Agendado</span>
-                  <button aria-label="Mais opções"><MoreHorizontal /></button>
-                </div>
-              ))}
-            </article>
-            <article className="tip-card">
-              <span className="tip-art"><Sparkles /></span>
-              <div><span className="mini-label">DICA DA SEMANA</span><h3>Consistência vence perfeição.</h3><p>Marcas que publicam 3–4 vezes por semana têm mais chances de crescer.</p></div>
-            </article>
-          </section>
+          <section className="bottom-grid" id="conteudos"><article className="upcoming"><div className="section-title"><div><h3>Próximos posts</h3><p>Sua fila do TikTok.</p></div></div>{posts.filter(p => p.status === "Agendado" || p.status === "Processando").slice(0, 4).map(post => <div className="queue-item" key={post.id}><div className={`thumb ${post.color}`}><NetworkIcon network={post.network} size={22} /></div><div className="queue-copy"><strong>{post.title}</strong><span><NetworkIcon network={post.network} size={13} /> {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(post.scheduledAt))}</span></div><span className="scheduled">{post.status}</span></div>)}{!posts.length && <p className="empty-copy">Nenhum post agendado ainda.</p>}</article><article className="tip-card"><span className="tip-art"><Sparkles /></span><div><span className="mini-label">TIKTOK OFICIAL</span><h3>Seu vídeo, no horário certo.</h3><p>O OmniX usa a Content Posting API e confirma o resultado após o processamento.</p></div></article></section>
         </div>
       </section>
 
-      {composerOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setComposerOpen(false)}>
-          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="composer-title" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="modal-head"><div><span className="mini-label">NOVO CONTEÚDO</span><h2 id="composer-title">Agendar publicação</h2></div><button onClick={() => setComposerOpen(false)} aria-label="Fechar"><X /></button></div>
-            <form action={savePost}>
-              <label>Legenda ou título<textarea name="title" required placeholder="Sobre o que é este conteúdo?" /></label>
-              <div className="form-row">
-                <label>Rede social<select name="network" defaultValue="Instagram"><option>Instagram</option><option>TikTok</option><option>YouTube</option></select></label>
-                <label>Dia de julho<input name="day" type="number" min="1" max="31" defaultValue="26" /></label>
-                <label>Horário<input name="time" type="time" defaultValue="12:00" /></label>
-              </div>
-              <label className="upload-zone"><UploadCloud /><strong>Adicione sua foto ou vídeo</strong><span>{isSupabaseConfigured ? "JPEG, PNG, WEBP, MP4, MOV ou WEBM · máximo 50 MB" : "No modo demonstração, o arquivo não é enviado."}</span><input name="media" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" /></label>
-              <div className="modal-actions"><button type="button" className="secondary" onClick={() => setComposerOpen(false)}>Cancelar</button><button type="submit" className="primary"><CalendarDays size={17} /> Agendar post</button></div>
-            </form>
-          </div>
-        </div>
-      )}
+      {composerOpen && <div className="modal-backdrop" role="presentation" onMouseDown={() => !saving && setComposerOpen(false)}><div className="modal composer-modal" role="dialog" aria-modal="true" aria-labelledby="composer-title" onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><span className="mini-label">NOVO VÍDEO</span><h2 id="composer-title">Agendar no TikTok</h2><p>{creator ? `Publicando como ${creator.creator_nickname || creator.creator_username}` : "Modo demonstração"}</p></div><button onClick={() => setComposerOpen(false)} disabled={saving} aria-label="Fechar"><X /></button></div><form action={savePost}>
+        <label>Legenda<textarea name="title" required maxLength={2200} placeholder="Escreva sua legenda e hashtags..." /></label>
+        <div className="form-row tiktok-row"><label>Data e horário<input name="scheduledAt" type="datetime-local" min={localDateTimeValue()} defaultValue={localDateTimeValue()} required /></label><label>Quem pode assistir?<select name="privacy" defaultValue="" required><option value="" disabled>Escolha manualmente</option>{(creator?.privacy_level_options ?? ["SELF_ONLY"]).filter(option => isTikTokAudited || option === "SELF_ONLY").map(option => <option value={option} key={option}>{privacyLabels[option] ?? option}</option>)}</select></label></div>
+        <label className="upload-zone"><UploadCloud /><strong>Escolha o vídeo</strong><span>MP4, MOV ou WEBM · até 50 MB · 360 a 4096 px</span><input name="media" type="file" required={isSupabaseConfigured} accept="video/mp4,video/quicktime,video/webm" /></label>
+        {creator && <fieldset className="tiktok-options"><legend>Interações</legend><label className="check-label"><input name="allowComment" type="checkbox" disabled={creator.comment_disabled} /> Permitir comentários</label><label className="check-label"><input name="allowDuet" type="checkbox" disabled={creator.duet_disabled} /> Permitir Dueto</label><label className="check-label"><input name="allowStitch" type="checkbox" disabled={creator.stitch_disabled} /> Permitir Costura</label><small>Nenhuma opção vem marcada; você mantém o controle.</small></fieldset>}
+        <fieldset className="tiktok-options"><legend>Declarações</legend><label className="check-label"><input type="checkbox" checked={commercial} onChange={event => setCommercial(event.target.checked)} /> Este conteúdo promove uma marca, produto ou serviço</label>{commercial && <div className="nested-options"><label className="check-label"><input name="brandOrganic" type="checkbox" /> Minha marca — conteúdo promocional</label><label className="check-label"><input name="brandContent" type="checkbox" checked={brandedContent} onChange={event => setBrandedContent(event.target.checked)} /> Outra marca — parceria paga</label></div>}<label className="check-label"><input name="isAigc" type="checkbox" /> Conteúdo gerado por IA</label><label className="check-label consent"><input name="consent" type="checkbox" required /> Ao agendar, concordo com a Confirmação de Uso de Música{brandedContent ? " e a Política de Conteúdo de Marca" : ""} do TikTok.</label></fieldset>
+        {!isTikTokAudited && isSupabaseConfigured && <p className="demo-note"><CircleHelp size={16} /> Durante a homologação, o TikTok restringe os posts a “Somente eu”. Após a auditoria, as opções públicas serão liberadas.</p>}
+        <p className="processing-note">O envio começa no horário agendado. O TikTok pode levar alguns minutos para processar e exibir o vídeo.</p><div className="modal-actions"><button type="button" className="secondary" onClick={() => setComposerOpen(false)} disabled={saving}>Cancelar</button><button type="submit" className="primary" disabled={saving}>{saving ? <LoaderCircle className="spin" size={17} /> : <CalendarDays size={17} />} {saving ? "Salvando..." : "Agendar post"}</button></div>
+      </form></div></div>}
 
-      {connectionsOpen && (
-        <div className="modal-backdrop" role="presentation" onMouseDown={() => setConnectionsOpen(false)}>
-          <div className="modal connections-modal" role="dialog" aria-modal="true" onMouseDown={(e) => e.stopPropagation()}>
-            <div className="modal-head"><div><span className="mini-label">CANAIS</span><h2>Suas conexões</h2><p>Gerencie onde seus conteúdos serão publicados.</p></div><button onClick={() => setConnectionsOpen(false)} aria-label="Fechar"><X /></button></div>
-            <div className="connection-list">
-              {(["Instagram", "TikTok", "YouTube"] as Network[]).map(network => {
-                const isConnected = connected.includes(network);
-                return <div className="connection" key={network}><span className={`network-logo ${network.toLowerCase()}`}><NetworkIcon network={network} size={22} /></span><div><strong>{network}</strong><small>{isConnected ? `@marina.criativa · Conectado` : "Nenhuma conta conectada"}</small></div><button className={isConnected ? "disconnect" : "primary"} onClick={() => toggleConnection(network)}>{isConnected ? "Desconectar" : "Conectar"}</button></div>;
-              })}
-            </div>
-            <p className="demo-note"><CircleHelp size={16} /> Demonstração segura: os botões simulam a conexão. As credenciais oficiais serão configuradas na etapa de integrações.</p>
-          </div>
-        </div>
-      )}
-
+      {connectionsOpen && <div className="modal-backdrop" role="presentation" onMouseDown={() => setConnectionsOpen(false)}><div className="modal connections-modal" role="dialog" aria-modal="true" onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><span className="mini-label">CANAIS</span><h2>Suas conexões</h2><p>Autorize a conta que receberá os vídeos agendados.</p></div><button onClick={() => setConnectionsOpen(false)} aria-label="Fechar"><X /></button></div><div className="connection-list">
+        <div className="connection"><span className="network-logo tiktok"><Video size={22} /></span><div><strong>TikTok</strong><small>{tiktokAccount ? `${tiktokAccount.display_name} · Conectado pela API oficial` : "Nenhuma conta conectada"}</small></div><button className={tiktokAccount ? "disconnect" : "primary"} onClick={tiktokAccount ? disconnectTikTok : connectTikTok} disabled={connectionLoading}>{connectionLoading ? <LoaderCircle className="spin" size={16} /> : tiktokAccount ? "Desconectar" : "Conectar"}</button></div>
+        {(["Instagram", "YouTube"] as Network[]).map(network => <div className="connection unavailable" key={network}><span className={`network-logo ${network.toLowerCase()}`}><NetworkIcon network={network} size={22} /></span><div><strong>{network}</strong><small>Integração planejada para uma próxima etapa</small></div><span className="soon">Em breve</span></div>)}
+      </div><p className="demo-note"><CircleHelp size={16} /> O OmniX nunca pede sua senha do TikTok. A autorização acontece no site oficial e pode ser revogada a qualquer momento.</p></div></div>}
       {toast && <div className="toast"><Check size={18} /> {toast}</div>}
     </main>
   );
