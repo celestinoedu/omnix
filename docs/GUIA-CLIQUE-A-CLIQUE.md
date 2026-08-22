@@ -8,7 +8,7 @@ O código do OmniX está preparado para agendar vídeos usando a API oficial do 
 
 Ao concluir este guia, o fluxo será:
 
-1. Entrar no OmniX pelo link enviado ao e-mail.
+1. Entrar no OmniX com e-mail e senha.
 2. Clicar em **Conectar TikTok** e autorizar no site oficial.
 3. Escolher vídeo, legenda, data, privacidade e declarações.
 4. O Supabase Cron verificar a fila a cada minuto.
@@ -182,21 +182,23 @@ on conflict (user_id) do nothing;
 ## Parte 9 — primeiro teste real
 
 1. Abra `https://omnix.lotusnegocios.com`.
-2. Entre com seu e-mail pelo magic link.
-3. Abra **Conexões** e clique em **Conectar** no TikTok.
-4. Autorize no site oficial do TikTok.
-5. Confirme que o OmniX mostra o nome real da conta.
-6. Clique em **Criar post**.
-7. Selecione um MP4 curto, de preferência abaixo de 20 MB.
-8. Escreva a legenda.
-9. Escolha uma data pelo menos cinco minutos no futuro.
-10. Escolha manualmente **Somente eu**.
-11. Marque ou deixe desmarcadas as interações conforme desejar.
-12. Informe corretamente se há promoção de marca ou conteúdo gerado por IA.
-13. Marque a declaração obrigatória do TikTok.
-14. Clique em **Agendar post**.
-15. Após o horário, aguarde alguns minutos e atualize o OmniX.
-16. Confirme que o status virou **Publicado** e que o vídeo aparece como privado na conta TikTok.
+2. No primeiro acesso, informe o e-mail e clique em **Criar ou recuperar senha**.
+3. Abra o único link de definição recebido, escolha uma senha com pelo menos 8 caracteres e salve.
+4. Nos próximos acessos, entre diretamente com e-mail e senha.
+5. Abra **Conexões** e clique em **Conectar** no TikTok.
+6. Autorize no site oficial do TikTok.
+7. Confirme que o OmniX mostra o nome real da conta.
+8. Clique em **Criar post**.
+9. Selecione um MP4 curto, de preferência abaixo de 20 MB.
+10. Escreva a legenda.
+11. Escolha uma data pelo menos cinco minutos no futuro.
+12. Escolha manualmente **Somente eu**.
+13. Marque ou deixe desmarcadas as interações conforme desejar.
+14. Informe corretamente se há promoção de marca ou conteúdo gerado por IA.
+15. Marque a declaração obrigatória do TikTok.
+16. Clique em **Agendar post**.
+17. Após o horário, aguarde alguns minutos e atualize o OmniX.
+18. Confirme que o status virou **Publicado** e que o vídeo aparece como privado na conta TikTok.
 
 ## Depois do teste
 

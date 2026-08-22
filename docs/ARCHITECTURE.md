@@ -26,7 +26,7 @@ Este documento separa a arquitetura existente da arquitetura-alvo. Componentes p
 
 - Posts de demonstração definidos na interface.
 - Novos agendamentos gravados no `localStorage` do navegador.
-- Cliente Supabase, login por magic link, CRUD de agendamentos e upload privado já implementados no código.
+- Cliente Supabase, login por e-mail e senha, recuperação de senha, CRUD de agendamentos e upload privado implementados no código.
 - Migração SQL versionada em `supabase/migrations/202607250001_initial_schema.sql`.
 - O OmniX compartilha o projeto Supabase Pro `nexlab` (`jycpsvlnnmbiwscvgdth`) para evitar um segundo custo recorrente.
 - Todos os objetos do produto usam o namespace `omnix_*`, o bucket privado `omnix-post-media` e funções com nome `tiktok-*`; nenhuma tabela do NexLab foi alterada.
@@ -60,7 +60,8 @@ A seleção final de serviços deve ser validada novamente contra os free tiers 
    - Nunca recebe client secrets nem tokens sociais persistentes.
 
 2. **Autenticação**
-   - Supabase Auth no free tier, com magic link por e-mail já implementado.
+   - Supabase Auth no projeto Pro compartilhado, com login por e-mail e senha.
+   - O link de recuperação é usado apenas para criar ou trocar a senha e retorna para `/redefinir-senha/` no domínio do OmniX.
    - Cada registro de negócio deve pertencer a um `user_id`.
 
 3. **Banco de dados**

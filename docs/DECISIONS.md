@@ -107,3 +107,11 @@ Este registro é cumulativo. Decisões antigas não devem ser apagadas; quando s
 - Decisão: executar o OmniX no projeto Supabase Pro `nexlab` (`jycpsvlnnmbiwscvgdth`) para evitar o custo de um segundo projeto.
 - Motivo: o volume inicial é pequeno e o proprietário aceita compartilhar a infraestrutura para concentrar o custo no plano já contratado.
 - Consequência: tabelas, tipos, índices, policies, bucket, funções, segredos e job do OmniX recebem nomes exclusivos com `omnix`; a tabela `omnix_profiles` controla adesão explícita. Auth, cotas, disponibilidade, backups e privilégios administrativos continuam compartilhados, portanto uma indisponibilidade, migração incorreta ou vazamento da `service_role` pode afetar os dois produtos.
+
+## D-014 — Login por senha com recuperação no domínio do OmniX
+
+- Data: 22/08/2026
+- Estado: Aceita
+- Decisão: substituir o magic link de acesso diário por login com e-mail e senha; manter link apenas para criação e recuperação de senha.
+- Motivo: o redirecionamento anterior terminava em endereço local e o proprietário prefere autenticação por senha.
+- Consequência: o Auth compartilhado preserva sua Site URL principal e adiciona o domínio do OmniX à lista permitida; a rota estática `/redefinir-senha/` permite ao usuário escolher a própria senha sem expô-la ao administrador.

@@ -22,7 +22,7 @@
 - Guia inicial clique a clique.
 - Memória operacional do projeto em Markdown.
 - Cliente Supabase com detecção segura de configuração.
-- Login sem senha por link enviado ao e-mail.
+- Login por e-mail e senha, com criação/recuperação de senha em rota própria.
 - Migração PostgreSQL completa com Row Level Security.
 - Tabelas isoladas `omnix_*` para perfis, contas sociais, credenciais, mídias, posts, destinos e tentativas.
 - Bucket privado exclusivo `omnix-post-media` com limite de 50 MB.
@@ -56,6 +56,7 @@
 - Segredos exclusivos de criptografia, Cron e URL do OmniX configurados; valores não foram gravados no repositório.
 - Adesão explícita por `omnix_profiles`, sem liberar automaticamente usuários do NexLab.
 - Primeiro proprietário autorizado em `omnix_profiles` e confirmado no ambiente remoto em 22/08/2026.
+- URLs de redirecionamento do Auth atualizadas para o domínio e a recuperação de senha do OmniX, preservando a configuração principal do NexLab.
 
 ## Simulado
 
