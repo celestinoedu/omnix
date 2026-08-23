@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">Símbolo monocromático OmniX</title>
+  <rect width="1024" height="1024" rx="220" fill="#6144DB"/>
+  <g fill="#fff">
+    <rect x="185" y="445" width="280" height="134" rx="67" transform="rotate(45 512 512)"/>
+    <rect x="559" y="445" width="280" height="134" rx="67" transform="rotate(45 512 512)"/>
+    <rect x="185" y="445" width="280" height="134" rx="67" transform="rotate(-45 512 512)"/>
+    <rect x="559" y="445" width="280" height="134" rx="67" transform="rotate(-45 512 512)"/>
+    <path d="M512 430c14 50 32 68 82 82-50 14-68 32-82 82-14-50-32-68-82-82 50-14 68-32 82-82Z"/>
+  </g>
+</svg>

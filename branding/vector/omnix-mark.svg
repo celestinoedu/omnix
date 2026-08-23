@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">Símbolo OmniX</title>
+  <defs>
+    <linearGradient id="bg" x1="128" y1="96" x2="896" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9B83F1"/>
+      <stop offset="1" stop-color="#6144DB"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+  <ellipse cx="512" cy="512" rx="356" ry="176" fill="none" stroke="#DCD4FF" stroke-width="32" transform="rotate(-18 512 512)" opacity=".88"/>
+  <circle cx="180" cy="612" r="38" fill="#F7F5FF"/>
+  <circle cx="844" cy="412" r="38" fill="#DCD4FF"/>
+  <g fill="#fff">
+    <rect x="185" y="445" width="280" height="134" rx="67" transform="rotate(45 512 512)"/>
+    <rect x="559" y="445" width="280" height="134" rx="67" transform="rotate(45 512 512)"/>
+    <rect x="185" y="445" width="280" height="134" rx="67" transform="rotate(-45 512 512)"/>
+    <rect x="559" y="445" width="280" height="134" rx="67" transform="rotate(-45 512 512)"/>
+    <path d="M512 430c14 50 32 68 82 82-50 14-68 32-82 82-14-50-32-68-82-82 50-14 68-32 82-82Z"/>
+  </g>
+</svg>

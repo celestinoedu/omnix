@@ -1,8 +1,9 @@
 "use client";
 
-import { CheckCircle2, LoaderCircle, LockKeyhole, Sparkles } from "lucide-react";
+import { CheckCircle2, LoaderCircle, LockKeyhole } from "lucide-react";
 import { FormEvent, useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { OmniXMark } from "@/components/OmniXMark";
 
 export default function RedefinirSenha() {
   const [ready, setReady] = useState(false);
@@ -39,7 +40,7 @@ export default function RedefinirSenha() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <span className="auth-logo"><Sparkles size={24} /></span>
+        <span className="auth-logo"><OmniXMark size={28} /></span>
         <p className="eyebrow">OMNIX SOCIAL</p>
         {done ? (
           <>

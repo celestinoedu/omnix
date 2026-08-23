@@ -8,6 +8,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
+import { OmniXMark } from "@/components/OmniXMark";
 import { getSupabaseBrowserClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 type Network = "Instagram" | "TikTok" | "YouTube";
@@ -232,13 +233,13 @@ export default function Dashboard() {
   async function signOut() { await getSupabaseBrowserClient()?.auth.signOut(); }
   if (authLoading || (isSupabaseConfigured && user && membershipLoading)) return <main className="auth-page"><div className="auth-loader"><Sparkles /><span>Preparando seu espaço...</span></div></main>;
   if (isSupabaseConfigured && !user) return <AuthGate />;
-  if (isSupabaseConfigured && user && !hasAccess) return <main className="auth-page"><section className="auth-card"><span className="auth-logo"><Sparkles size={24} /></span><p className="eyebrow">OMNIX SOCIAL</p><h1>Acesso ainda não liberado</h1><p>Seu login é válido, mas este e-mail ainda não foi autorizado para usar o OmniX.</p><button className="secondary auth-back" onClick={signOut}>Sair</button></section></main>;
+  if (isSupabaseConfigured && user && !hasAccess) return <main className="auth-page"><section className="auth-card"><span className="auth-logo"><OmniXMark size={28} /></span><p className="eyebrow">OMNIX SOCIAL</p><h1>Acesso ainda não liberado</h1><p>Seu login é válido, mas este e-mail ainda não foi autorizado para usar o OmniX.</p><button className="secondary auth-back" onClick={signOut}>Sair</button></section></main>;
 
   const connectedCount = tiktokAccount ? 1 : 0;
   return (
     <main className="app-shell">
       <aside className={`sidebar ${mobileMenu ? "open" : ""}`}>
-        <div className="brand"><span className="brand-mark"><Sparkles size={20} /></span><span>OmniX</span><button className="mobile-close" onClick={() => setMobileMenu(false)} aria-label="Fechar menu"><X /></button></div>
+        <div className="brand"><span className="brand-mark"><OmniXMark size={23} /></span><span>OmniX</span><button className="mobile-close" onClick={() => setMobileMenu(false)} aria-label="Fechar menu"><X /></button></div>
         <nav><a className="active" href="#"><Home /> Visão geral</a><a href="#calendario"><CalendarDays /> Calendário</a><a href="#conteudos"><LayoutGrid /> Conteúdos <span className="nav-count">{posts.length}</span></a><button onClick={() => setConnectionsOpen(true)}><UploadCloud /> Conexões <span className="nav-count">{connectedCount}</span></button></nav>
         <div className="sidebar-bottom"><a href="#ajuda"><CircleHelp /> Central de ajuda</a><a href="#config"><Settings /> Configurações</a><div className="profile"><div className="avatar">{user?.email?.slice(0, 2).toUpperCase() ?? "MS"}</div><div><strong>{user?.email?.split("@")[0] ?? "Marina Silva"}</strong><small>{isSupabaseConfigured ? "Dados sincronizados" : "Modo demonstração"}</small></div>{user ? <button className="profile-more" onClick={signOut} title="Sair"><MoreHorizontal size={18} /></button> : <MoreHorizontal size={18} />}</div></div>
       </aside>

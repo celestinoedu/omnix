@@ -1,8 +1,9 @@
 "use client";
 
-import { CheckCircle2, KeyRound, LoaderCircle, LockKeyhole, LogIn, Mail, Sparkles } from "lucide-react";
+import { CheckCircle2, KeyRound, LoaderCircle, LockKeyhole, LogIn, Mail } from "lucide-react";
 import { FormEvent, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { OmniXMark } from "@/components/OmniXMark";
 
 export function AuthGate() {
   const [email, setEmail] = useState("");
@@ -49,7 +50,7 @@ export function AuthGate() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <span className="auth-logo"><Sparkles size={24} /></span>
+        <span className="auth-logo"><OmniXMark size={28} /></span>
         <p className="eyebrow">OMNIX SOCIAL</p>
         {recoverySent ? (
           <>

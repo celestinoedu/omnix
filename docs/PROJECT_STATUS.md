@@ -61,6 +61,7 @@
 - `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET` configurados diretamente nos segredos das Edge Functions em 23/08/2026.
 - Início do OAuth validado com sessão do proprietário: host oficial, callback, escopo `video.publish` e `state` corretos; estado temporário do teste removido.
 - Arquivo de verificação de propriedade do TikTok adicionado à raiz pública do domínio em 23/08/2026.
+- Pacote de branding criado em `branding/`, com ícone TikTok 1024 × 1024, exportações raster, logos vetoriais, tokens e brand sheet; símbolo aplicado ao favicon e aos pontos principais da interface.
 
 ## Simulado
 

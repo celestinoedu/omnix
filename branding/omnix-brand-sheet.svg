@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" role="img" aria-labelledby="title desc">
+  <title id="title">Brand sheet OmniX</title>
+  <desc id="desc">Resumo visual da marca OmniX, com símbolo, logo, cores e tipografia.</desc>
+  <defs>
+    <linearGradient id="brand" x1="120" y1="100" x2="720" y2="760" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9B83F1"/>
+      <stop offset="1" stop-color="#6144DB"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="#F7F8FB"/>
+  <rect x="70" y="70" width="1460" height="860" rx="44" fill="#fff" stroke="#E4E6EC"/>
+  <rect x="120" y="120" width="560" height="560" rx="120" fill="url(#brand)"/>
+  <ellipse cx="400" cy="400" rx="198" ry="98" fill="none" stroke="#DCD4FF" stroke-width="18" opacity=".78" transform="rotate(-18 400 400)"/>
+  <circle cx="215" cy="456" r="21" fill="#fff"/>
+  <circle cx="585" cy="344" r="21" fill="#DCD4FF"/>
+  <g fill="#fff" transform="translate(112 112) scale(.5625)">
+    <rect x="185" y="445" width="280" height="134" rx="67" transform="rotate(45 512 512)"/>
+    <rect x="559" y="445" width="280" height="134" rx="67" transform="rotate(45 512 512)"/>
+    <rect x="185" y="445" width="280" height="134" rx="67" transform="rotate(-45 512 512)"/>
+    <rect x="559" y="445" width="280" height="134" rx="67" transform="rotate(-45 512 512)"/>
+    <path d="M512 430c14 50 32 68 82 82-50 14-68 32-82 82-14-50-32-68-82-82 50-14 68-32 82-82Z"/>
+  </g>
+  <text x="750" y="250" fill="#1E2430" font-family="Manrope, Inter, Arial, sans-serif" font-size="154" font-weight="800" letter-spacing="-8">OmniX</text>
+  <text x="758" y="314" fill="#7357E8" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="5">SOCIAL SCHEDULING</text>
+  <text x="758" y="410" fill="#657084" font-family="Inter, Arial, sans-serif" font-size="34">Agende. Publique. Cresça.</text>
+  <text x="758" y="525" fill="#1E2430" font-family="Manrope, Inter, Arial, sans-serif" font-size="28" font-weight="800">CORES</text>
+  <g font-family="Inter, Arial, sans-serif" font-size="20" fill="#526074">
+    <rect x="758" y="560" width="112" height="112" rx="24" fill="#7357E8"/><text x="758" y="704">#7357E8</text>
+    <rect x="900" y="560" width="112" height="112" rx="24" fill="#5D43CE"/><text x="900" y="704">#5D43CE</text>
+    <rect x="1042" y="560" width="112" height="112" rx="24" fill="#9B83F1"/><text x="1042" y="704">#9B83F1</text>
+    <rect x="1184" y="560" width="112" height="112" rx="24" fill="#DCD4FF"/><text x="1184" y="704">#DCD4FF</text>
+    <rect x="1326" y="560" width="112" height="112" rx="24" fill="#1E2430"/><text x="1326" y="704">#1E2430</text>
+  </g>
+  <line x1="120" y1="780" x2="1480" y2="780" stroke="#E4E6EC"/>
+  <text x="120" y="850" fill="#1E2430" font-family="Manrope, Inter, Arial, sans-serif" font-size="38" font-weight="800">Manrope — títulos e marca</text>
+  <text x="800" y="850" fill="#526074" font-family="Inter, Arial, sans-serif" font-size="30">Inter — interface e textos</text>
+</svg>

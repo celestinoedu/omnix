@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-labelledby="title">
+  <title id="title">Logo branco OmniX</title>
+  <g fill="#fff">
+    <rect x="40" y="40" width="240" height="240" rx="54" fill-opacity=".16"/>
+    <g transform="translate(40 40) scale(.234375)">
+      <rect x="185" y="445" width="280" height="134" rx="67" transform="rotate(45 512 512)"/>
+      <rect x="559" y="445" width="280" height="134" rx="67" transform="rotate(45 512 512)"/>
+      <rect x="185" y="445" width="280" height="134" rx="67" transform="rotate(-45 512 512)"/>
+      <rect x="559" y="445" width="280" height="134" rx="67" transform="rotate(-45 512 512)"/>
+      <path d="M512 430c14 50 32 68 82 82-50 14-68 32-82 82-14-50-32-68-82-82 50-14 68-32 82-82Z"/>
+    </g>
+    <text x="340" y="198" font-family="Manrope, Inter, Arial, sans-serif" font-size="142" font-weight="800" letter-spacing="-7">OmniX</text>
+  </g>
+</svg>

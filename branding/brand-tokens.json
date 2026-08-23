@@ -1,0 +1,18 @@
+{
+  "name": "OmniX",
+  "colors": {
+    "violet": "#7357E8",
+    "violetDark": "#5D43CE",
+    "violetLight": "#9B83F1",
+    "lavender": "#DCD4FF",
+    "ink": "#1E2430",
+    "white": "#FFFFFF"
+  },
+  "gradient": "linear-gradient(145deg, #9B83F1 0%, #6144DB 100%)",
+  "typography": {
+    "display": "Manrope",
+    "interface": "Inter"
+  },
+  "cornerStyle": "rounded",
+  "minimumMarkSizePx": 32
+}
