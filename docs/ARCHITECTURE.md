@@ -1,10 +1,10 @@
 # Arquitetura do OmniX Social
 
-Última atualização: 22 de agosto de 2026.
+Última atualização: 23 de agosto de 2026.
 
 Este documento separa a arquitetura existente da arquitetura-alvo. Componentes planejados não devem ser descritos ao proprietário como já implementados.
 
-## Arquitetura atual — backend publicado, aguardando credenciais e aprovação do TikTok
+## Arquitetura atual — servidor configurado, aguardando conexão e aprovação do TikTok
 
 ### Interface
 
@@ -43,10 +43,11 @@ Este documento separa a arquitetura existente da arquitetura-alvo. Componentes p
 - Tokens são cifrados com AES-256-GCM e ficam em `omnix_social_credentials`, sem acesso pelo navegador.
 - A migração `202608220001_tiktok_direct_post.sql` adiciona estados OAuth e a reivindicação transacional da fila.
 - As três Edge Functions estão publicadas no projeto compartilhado. O job `omnix-tiktok-publisher` está ativo no Supabase Cron a cada minuto e usa URL e segredo exclusivos armazenados no Vault.
+- Client key e client secret do aplicativo TikTok estão configurados somente nos segredos das Edge Functions; a geração da URL OAuth oficial foi validada sem expor valores.
 
 ### Limitação essencial
 
-A integração só ficará operacional após criar o aplicativo no TikTok for Developers e cadastrar `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET`. Usuário, funções e Cron já estão ativos. Até a auditoria do TikTok, Direct Post publica apenas com visibilidade `SELF_ONLY`.
+A infraestrutura está operacional. Falta autorizar a conta no TikTok e confirmar que o portal do aplicativo liberou Login Kit, Content Posting API e `video.publish`. Até a auditoria do TikTok, Direct Post publica apenas com visibilidade `SELF_ONLY`.
 
 ## Arquitetura-alvo — expansão após validar o TikTok
 

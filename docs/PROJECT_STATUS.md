@@ -1,10 +1,10 @@
 # Estado atual do projeto
 
-Última atualização: 22 de agosto de 2026.
+Última atualização: 23 de agosto de 2026.
 
 ## Etapa atual
 
-**Backend TikTok publicado no Supabase compartilhado / aguardando credenciais, acesso do proprietário e aprovação do TikTok.**
+**Servidor TikTok configurado / aguardando conexão da conta e aprovação do aplicativo pelo TikTok.**
 
 ## Implementado
 
@@ -58,6 +58,8 @@
 - Adesão explícita por `omnix_profiles`, sem liberar automaticamente usuários do NexLab.
 - Primeiro proprietário autorizado em `omnix_profiles` e confirmado no ambiente remoto em 22/08/2026.
 - URLs de redirecionamento do Auth atualizadas para o domínio e a recuperação de senha do OmniX, preservando a configuração principal do NexLab.
+- `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET` configurados diretamente nos segredos das Edge Functions em 23/08/2026.
+- Início do OAuth validado com sessão do proprietário: host oficial, callback, escopo `video.publish` e `state` corretos; estado temporário do teste removido.
 
 ## Simulado
 
@@ -65,10 +67,6 @@
 - Estatísticas de publicações.
 - Estados de posts publicados.
 - Instagram e YouTube.
-
-## Implementado, mas ainda não ativado por completo
-
-- Credenciais `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET`, ainda dependentes do aplicativo TikTok.
 
 ## Ainda não implementado
 
@@ -91,12 +89,10 @@
 
 Ativar e validar o TikTok já implementado:
 
-1. Criar o aplicativo no TikTok for Developers e adicionar os produtos exigidos.
-2. Cadastrar `TIKTOK_CLIENT_KEY` e `TIKTOK_CLIENT_SECRET` no projeto Supabase compartilhado.
-3. Adicionar a URL do OmniX às Redirect URLs do Auth sem substituir a Site URL do NexLab.
-4. Conectar a conta TikTok pelo OmniX.
-5. Agendar um vídeo de teste como `SELF_ONLY` e confirmar o ciclo completo.
-6. Gravar a demonstração e solicitar auditoria do TikTok para publicação pública.
+1. Confirmar no TikTok for Developers que Login Kit, Content Posting API, callback e escopos estão salvos.
+2. Conectar a conta TikTok pelo OmniX.
+3. Agendar um vídeo de teste como `SELF_ONLY` e confirmar o ciclo completo.
+4. Gravar a demonstração e solicitar auditoria do TikTok para publicação pública.
 
 ## Validação mais recente
 

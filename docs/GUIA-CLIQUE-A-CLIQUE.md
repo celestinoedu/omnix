@@ -1,6 +1,6 @@
 # Guia clique a clique — ativar TikTok e GitHub Pages
 
-Última atualização: 22 de agosto de 2026.
+Última atualização: 23 de agosto de 2026.
 
 O código do OmniX está preparado para agendar vídeos usando a API oficial do TikTok. Para funcionar de verdade, ainda é necessário autorizar o aplicativo nos painéis do TikTok, Supabase e GitHub. Não envie nenhuma chave secreta por conversa e não coloque segredos no GitHub.
 
@@ -83,7 +83,7 @@ Esta etapa usa o terminal apenas para enviar os arquivos ao seu próprio Supabas
    - `npx supabase functions deploy tiktok-publisher`
 8. As três funções foram publicadas com sucesso em 22/08/2026; repita somente após alterar o código delas.
 
-## Parte 4 — criar os segredos das funções
+## Parte 4 — segredos das funções (já concluída)
 
 1. No Supabase, abra **Edge Functions**.
 2. Clique em **Secrets** ou **Manage secrets**.
@@ -95,6 +95,8 @@ Esta etapa usa o terminal apenas para enviar os arquivos ao seu próprio Supabas
 | `TIKTOK_CLIENT_SECRET` | Client secret copiado do TikTok |
 | `OMNIX_APP_URL` | `https://omnix.lotusnegocios.com` (já configurado) |
 | `TIKTOK_APP_AUDITED` | `false` (já configurado) |
+
+As duas credenciais TikTok foram configuradas diretamente no Supabase em 23/08/2026 e não foram gravadas no Git.
 
 ### Gerar os dois valores aleatórios
 
