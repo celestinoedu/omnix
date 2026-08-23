@@ -3,9 +3,9 @@
 import {
   CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Clock3,
   Home, Instagram, LayoutGrid, LoaderCircle, Menu, MoreHorizontal, Plus, Search,
-  Settings, Sparkles, UploadCloud, Video, X, Youtube,
+  Settings, Sparkles, Trash2, UploadCloud, Video, X, Youtube,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { AuthGate } from "@/components/AuthGate";
 import { OmniXMark } from "@/components/OmniXMark";
@@ -83,6 +83,8 @@ export default function Dashboard() {
   const [dataLoading, setDataLoading] = useState(false);
   const [connectionLoading, setConnectionLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
   const [tiktokAccount, setTikTokAccount] = useState<TikTokAccount | null>(null);
   const [creator, setCreator] = useState<CreatorInfo | null>(null);
   const [commercial, setCommercial] = useState(false);
@@ -196,6 +198,8 @@ export default function Dashboard() {
       if (brandContent && privacy === "SELF_ONLY") return showToast("Parceria paga não pode usar a privacidade Somente eu.");
       if (form.get("consent") !== "on") return showToast("Confirme a declaração de uso de música do TikTok.");
 
+      if (savingRef.current) return;
+      savingRef.current = true;
       setSaving(true);
       const supabase = getSupabaseBrowserClient(); if (!supabase) return;
       let storagePath = "";
@@ -222,12 +226,32 @@ export default function Dashboard() {
         if (mediaAssetId) await supabase.from("omnix_media_assets").delete().eq("id", mediaAssetId);
         if (storagePath) await supabase.storage.from("omnix-post-media").remove([storagePath]);
         showToast(error instanceof Error ? error.message : "Não foi possível agendar o post.");
-      } finally { setSaving(false); }
+      } finally { savingRef.current = false; setSaving(false); }
       return;
     }
 
     const newPost: Post = { id: String(Date.now()), title, network: "TikTok", scheduledAt: new Date(scheduledValue).toISOString(), status: "Agendado", color: colors[posts.length % colors.length] };
     const next = [...posts, newPost]; setPosts(next); localStorage.setItem("omnix-posts", JSON.stringify(next)); setComposerOpen(false); showToast("Demonstração salva neste navegador.");
+  }
+
+  async function deleteScheduledPost(post: Post) {
+    if (!(["Agendado", "Falhou"] as Status[]).includes(post.status) || deletingPostId) return;
+    if (!window.confirm(`Excluir o agendamento “${post.title}”?`)) return;
+    const supabase = getSupabaseBrowserClient(); if (!supabase) return;
+    setDeletingPostId(post.id);
+    try {
+      const { data, error } = await supabase.rpc("omnix_delete_scheduled_post", { target_post_id: post.id });
+      const result = Array.isArray(data) ? data[0] : data;
+      if (error || !result?.deleted) {
+        await loadPosts();
+        return showToast("Este post já está sendo processado ou publicado e não pode mais ser excluído.");
+      }
+      if (result.storage_path) await supabase.storage.from("omnix-post-media").remove([result.storage_path]);
+      await loadPosts();
+      showToast("Agendamento e vídeo excluídos.");
+    } finally {
+      setDeletingPostId(null);
+    }
   }
 
   async function signOut() { await getSupabaseBrowserClient()?.auth.signOut(); }
@@ -251,7 +275,7 @@ export default function Dashboard() {
           <section className="calendar-card" id="calendario"><div className="calendar-header"><div><div className="month-nav"><h2 className="capitalize">{monthLabel}</h2><button aria-label="Mês anterior" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}><ChevronLeft /></button><button aria-label="Próximo mês" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}><ChevronRight /></button><button className="today" onClick={() => setCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>Hoje</button></div><p>{dataLoading ? "Carregando conteúdos..." : `${postsInMonth} conteúdos neste calendário`}</p></div><div className="filters">{(["Todas", "TikTok"] as const).map(item => <button key={item} className={filter === item ? "selected" : ""} onClick={() => setFilter(item)}>{item !== "Todas" && <NetworkIcon network={item} />} {item}</button>)}</div></div>
             <div className="calendar">{weekDays.map(day => <div className="weekday" key={day}>{day}</div>)}{cells.map(({ date, currentMonth }, index) => { const dayPosts = visiblePosts.filter(post => sameLocalDay(post.scheduledAt, date)); const today = sameLocalDay(new Date().toISOString(), date); return <div className={`day ${currentMonth ? "" : "muted"} ${today ? "current" : ""}`} key={index}><span className="day-number">{date.getDate()}</span>{dayPosts.map(post => <button className={`post ${post.color}`} key={post.id} title={`${post.title} — ${post.status}`}><span className="post-network"><NetworkIcon network={post.network} size={13} /> {new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(post.scheduledAt))}</span><strong>{post.title}</strong></button>)}{currentMonth && <button className="quick-add" onClick={openComposer} aria-label={`Adicionar no dia ${date.getDate()}`}><Plus size={14} /></button>}</div>; })}</div>
           </section>
-          <section className="bottom-grid" id="conteudos"><article className="upcoming"><div className="section-title"><div><h3>Próximos posts</h3><p>Sua fila do TikTok.</p></div></div>{posts.filter(p => p.status === "Agendado" || p.status === "Processando").slice(0, 4).map(post => <div className="queue-item" key={post.id}><div className={`thumb ${post.color}`}><NetworkIcon network={post.network} size={22} /></div><div className="queue-copy"><strong>{post.title}</strong><span><NetworkIcon network={post.network} size={13} /> {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(post.scheduledAt))}</span></div><span className="scheduled">{post.status}</span></div>)}{!posts.length && <p className="empty-copy">Nenhum post agendado ainda.</p>}</article><article className="tip-card"><span className="tip-art"><Sparkles /></span><div><span className="mini-label">TIKTOK OFICIAL</span><h3>Seu vídeo, no horário certo.</h3><p>O OmniX usa a Content Posting API e confirma o resultado após o processamento.</p></div></article></section>
+          <section className="bottom-grid" id="conteudos"><article className="upcoming"><div className="section-title"><div><h3>Posts recentes</h3><p>Agendamentos e tentativas do TikTok.</p></div></div>{posts.filter(p => p.status === "Agendado" || p.status === "Processando" || p.status === "Falhou").slice(0, 6).map(post => <div className="queue-item" key={post.id}><div className={`thumb ${post.color}`}><NetworkIcon network={post.network} size={22} /></div><div className="queue-copy"><strong>{post.title}</strong><span><NetworkIcon network={post.network} size={13} /> {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(post.scheduledAt))}</span></div><span className={`scheduled ${post.status === "Falhou" ? "failed" : ""}`}>{post.status}</span>{(["Agendado", "Falhou"] as Status[]).includes(post.status) && <button className="delete-schedule" type="button" onClick={() => deleteScheduledPost(post)} disabled={deletingPostId === post.id} title="Excluir post" aria-label={`Excluir post ${post.title}`}>{deletingPostId === post.id ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}</button>}</div>)}{!posts.length && <p className="empty-copy">Nenhum post agendado ainda.</p>}</article><article className="tip-card"><span className="tip-art"><Sparkles /></span><div><span className="mini-label">TIKTOK OFICIAL</span><h3>Seu vídeo, no horário certo.</h3><p>O OmniX usa a Content Posting API e confirma o resultado após o processamento.</p></div></article></section>
         </div>
       </section>
 

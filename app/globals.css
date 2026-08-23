@@ -113,7 +113,10 @@ button:disabled { cursor: not-allowed; opacity: .65; }
 .queue-copy strong { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .queue-copy span { color: #9ba4b2; display: flex; align-items: center; gap: 4px; font-size: 9px; margin-top: 4px; }
 .scheduled { color: #29996a; background: #e4f6ee; font-size: 9px; font-weight: 700; padding: 5px 8px; border-radius: 10px; }
+.scheduled.failed { color: #c84454; background: #fff0f1; }
 .queue-item > button { border: 0; background: none; color: #a1a9b6; }
+.queue-item > .delete-schedule { width: 30px; height: 30px; border-radius: 7px; display: grid; place-items: center; color: #a1a9b6; flex: 0 0 auto; }
+.queue-item > .delete-schedule:hover { background: #fff0f1; color: #d84d5d; }
 .tip-card { padding: 26px; display: flex; align-items: center; gap: 20px; background: linear-gradient(135deg, #f3efff, #faf7ff 70%); border-color: #e3dafd; }
 .tip-art { width: 74px; height: 74px; flex: 0 0 auto; display: grid; place-items: center; border-radius: 22px 22px 22px 8px; color: white; background: linear-gradient(145deg, #9b83f1, #6d51dc); transform: rotate(-3deg); box-shadow: 0 12px 25px #7659db2f; }
 .tip-art svg { width: 30px; transform: rotate(3deg); }

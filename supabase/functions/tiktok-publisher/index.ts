@@ -64,7 +64,9 @@ async function publishOne(client: ReturnType<typeof adminClient>, destinationId:
     });
     const initialized = await initResponse.json();
     if (!initResponse.ok || initialized.error?.code !== "ok" || !initialized.data?.upload_url) {
-      throw new Error(initialized.error?.message || initialized.error?.code || "TikTok recusou o início da publicação.");
+      const code = initialized.error?.code || `http_${initResponse.status}`;
+      const message = initialized.error?.message || "TikTok recusou o início da publicação.";
+      throw new Error(`${code}: ${message}`);
     }
 
     await client.from("omnix_post_destinations").update({ platform_post_id: initialized.data.publish_id, updated_at: new Date().toISOString() }).eq("id", destination.id);
