@@ -15,6 +15,11 @@ type Network = "Instagram" | "TikTok" | "YouTube";
 type Status = "Agendado" | "Processando" | "Publicado" | "Falhou" | "Rascunho";
 type Post = { id: string; title: string; network: Network; scheduledAt: string; status: Status; color: string };
 type TikTokAccount = { id: string; display_name: string; status: string };
+type PostPreview = {
+  caption: string; accountName: string; privacy: string; publishedAt: string | null;
+  errorCode: string | null; errorMessage: string | null; videoUrl: string;
+  originalName: string; duration: number | null; width: number | null; height: number | null;
+};
 type CreatorInfo = {
   creator_nickname: string; creator_username: string; privacy_level_options: string[];
   comment_disabled: boolean; duet_disabled: boolean; stitch_disabled: boolean;
@@ -54,6 +59,15 @@ function localDateTimeValue(date: Date) {
   return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 }
 
+function displayStatus(postStatus: string, destinationStatus?: string): Status {
+  const status = destinationStatus || postStatus;
+  if (status === "published") return "Publicado";
+  if (status === "processing") return "Processando";
+  if (status === "failed" || postStatus === "failed") return "Falhou";
+  if (postStatus === "draft") return "Rascunho";
+  return "Agendado";
+}
+
 async function readVideoMetadata(file: File) {
   return new Promise<{ duration: number; width: number; height: number }>((resolve, reject) => {
     const video = document.createElement("video");
@@ -85,6 +99,9 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const [previewPost, setPreviewPost] = useState<Post | null>(null);
+  const [previewDetails, setPreviewDetails] = useState<PostPreview | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [tiktokAccount, setTikTokAccount] = useState<TikTokAccount | null>(null);
   const [creator, setCreator] = useState<CreatorInfo | null>(null);
   const [commercial, setCommercial] = useState(false);
@@ -107,8 +124,7 @@ export default function Dashboard() {
     if (error) showToast("Não foi possível carregar os posts.");
     else setPosts((data ?? []).map((item, index) => {
       const destination = Array.isArray(item.omnix_post_destinations) ? item.omnix_post_destinations[0] : item.omnix_post_destinations;
-      const rawStatus = destination?.status ?? item.status;
-      const status: Status = rawStatus === "published" ? "Publicado" : rawStatus === "processing" ? "Processando" : rawStatus === "failed" ? "Falhou" : item.status === "draft" ? "Rascunho" : "Agendado";
+      const status = displayStatus(item.status, destination?.status);
       return { id: item.id, title: item.title, network: (destination?.platform ?? "TikTok") as Network, scheduledAt: item.scheduled_at_utc, status, color: colors[index % colors.length] };
     }));
     setDataLoading(false);
@@ -254,6 +270,35 @@ export default function Dashboard() {
     }
   }
 
+  async function openPostPreview(post: Post) {
+    setPreviewPost(post); setPreviewDetails(null); setPreviewLoading(true);
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) { setPreviewLoading(false); return; }
+    const { data, error } = await supabase.from("omnix_posts").select("id,title,caption,scheduled_at_utc,status,omnix_media_assets(storage_path,original_name,duration_seconds,width,height),omnix_post_destinations(status,published_at,last_error_code,last_error_message,platform_options,omnix_social_accounts(display_name))").eq("id", post.id).single();
+    if (error || !data) {
+      setPreviewLoading(false); setPreviewPost(null); return showToast("Não foi possível carregar os detalhes deste post.");
+    }
+    const destination = Array.isArray(data.omnix_post_destinations) ? data.omnix_post_destinations[0] : data.omnix_post_destinations;
+    const account = Array.isArray(destination?.omnix_social_accounts) ? destination?.omnix_social_accounts[0] : destination?.omnix_social_accounts;
+    const media = Array.isArray(data.omnix_media_assets) ? data.omnix_media_assets[0] : data.omnix_media_assets;
+    let videoUrl = "";
+    if (media?.storage_path) {
+      const { data: signed } = await supabase.storage.from("omnix-post-media").createSignedUrl(media.storage_path, 10 * 60);
+      videoUrl = signed?.signedUrl || "";
+    }
+    const currentStatus = displayStatus(data.status, destination?.status);
+    setPreviewPost({ ...post, status: currentStatus });
+    setPreviewDetails({
+      caption: data.caption || data.title, accountName: account?.display_name || "TikTok",
+      privacy: String(destination?.platform_options?.privacy_level || ""), publishedAt: destination?.published_at || null,
+      errorCode: destination?.last_error_code || null, errorMessage: destination?.last_error_message || null,
+      videoUrl, originalName: media?.original_name || "Vídeo indisponível", duration: media?.duration_seconds ?? null,
+      width: media?.width ?? null, height: media?.height ?? null,
+    });
+    setPreviewLoading(false);
+    await loadPosts();
+  }
+
   async function signOut() { await getSupabaseBrowserClient()?.auth.signOut(); }
   if (authLoading || (isSupabaseConfigured && user && membershipLoading)) return <main className="auth-page"><div className="auth-loader"><Sparkles /><span>Preparando seu espaço...</span></div></main>;
   if (isSupabaseConfigured && !user) return <AuthGate />;
@@ -273,7 +318,7 @@ export default function Dashboard() {
           <div className="welcome-row"><div><p className="eyebrow">{new Intl.DateTimeFormat("pt-BR", { dateStyle: "full" }).format(new Date()).toUpperCase()}</p><h1>Olá, {user?.email?.split("@")[0] ?? "Marina"} <span>👋</span></h1><p>Agende seus vídeos no TikTok, sem complicação.</p></div><button className="secondary" onClick={() => setConnectionsOpen(true)}><span className={`status-dot ${connectedCount ? "" : "offline"}`} /> {connectedCount ? "TikTok conectado" : "Conectar TikTok"} <ChevronDown size={16} /></button></div>
           <section className="stats-grid"><article><div className="stat-icon blue"><CalendarDays /></div><div><span>Agendados</span><strong>{posts.filter(p => p.status === "Agendado").length}</strong><small>Na fila</small></div></article><article><div className="stat-icon green"><Check /></div><div><span>Publicados</span><strong>{posts.filter(p => p.status === "Publicado").length}</strong><small>Confirmados pelo TikTok</small></div></article><article><div className="stat-icon amber"><Clock3 /></div><div><span>Processando</span><strong>{posts.filter(p => p.status === "Processando").length}</strong><small>Enviados ao TikTok</small></div></article></section>
           <section className="calendar-card" id="calendario"><div className="calendar-header"><div><div className="month-nav"><h2 className="capitalize">{monthLabel}</h2><button aria-label="Mês anterior" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))}><ChevronLeft /></button><button aria-label="Próximo mês" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))}><ChevronRight /></button><button className="today" onClick={() => setCalendarMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>Hoje</button></div><p>{dataLoading ? "Carregando conteúdos..." : `${postsInMonth} conteúdos neste calendário`}</p></div><div className="filters">{(["Todas", "TikTok"] as const).map(item => <button key={item} className={filter === item ? "selected" : ""} onClick={() => setFilter(item)}>{item !== "Todas" && <NetworkIcon network={item} />} {item}</button>)}</div></div>
-            <div className="calendar">{weekDays.map(day => <div className="weekday" key={day}>{day}</div>)}{cells.map(({ date, currentMonth }, index) => { const dayPosts = visiblePosts.filter(post => sameLocalDay(post.scheduledAt, date)); const today = sameLocalDay(new Date().toISOString(), date); return <div className={`day ${currentMonth ? "" : "muted"} ${today ? "current" : ""}`} key={index}><span className="day-number">{date.getDate()}</span>{dayPosts.map(post => <button className={`post ${post.color}`} key={post.id} title={`${post.title} — ${post.status}`}><span className="post-network"><NetworkIcon network={post.network} size={13} /> {new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(post.scheduledAt))}</span><strong>{post.title}</strong></button>)}{currentMonth && <button className="quick-add" onClick={openComposer} aria-label={`Adicionar no dia ${date.getDate()}`}><Plus size={14} /></button>}</div>; })}</div>
+            <div className="calendar">{weekDays.map(day => <div className="weekday" key={day}>{day}</div>)}{cells.map(({ date, currentMonth }, index) => { const dayPosts = visiblePosts.filter(post => sameLocalDay(post.scheduledAt, date)); const today = sameLocalDay(new Date().toISOString(), date); return <div className={`day ${currentMonth ? "" : "muted"} ${today ? "current" : ""}`} key={index}><span className="day-number">{date.getDate()}</span>{dayPosts.map(post => <button className={`post ${post.color}`} key={post.id} title={`${post.title} — ${post.status}. Clique para visualizar.`} onClick={() => openPostPreview(post)}><span className="post-network"><NetworkIcon network={post.network} size={13} /> {new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit" }).format(new Date(post.scheduledAt))}</span><strong>{post.title}</strong></button>)}{currentMonth && <button className="quick-add" onClick={openComposer} aria-label={`Adicionar no dia ${date.getDate()}`}><Plus size={14} /></button>}</div>; })}</div>
           </section>
           <section className="bottom-grid" id="conteudos"><article className="upcoming"><div className="section-title"><div><h3>Posts recentes</h3><p>Agendamentos e tentativas do TikTok.</p></div></div>{posts.filter(p => p.status === "Agendado" || p.status === "Processando" || p.status === "Falhou").slice(0, 6).map(post => <div className="queue-item" key={post.id}><div className={`thumb ${post.color}`}><NetworkIcon network={post.network} size={22} /></div><div className="queue-copy"><strong>{post.title}</strong><span><NetworkIcon network={post.network} size={13} /> {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(post.scheduledAt))}</span></div><span className={`scheduled ${post.status === "Falhou" ? "failed" : ""}`}>{post.status}</span>{(["Agendado", "Falhou"] as Status[]).includes(post.status) && <button className="delete-schedule" type="button" onClick={() => deleteScheduledPost(post)} disabled={deletingPostId === post.id} title="Excluir post" aria-label={`Excluir post ${post.title}`}>{deletingPostId === post.id ? <LoaderCircle className="spin" size={16} /> : <Trash2 size={16} />}</button>}</div>)}{!posts.length && <p className="empty-copy">Nenhum post agendado ainda.</p>}</article><article className="tip-card"><span className="tip-art"><Sparkles /></span><div><span className="mini-label">TIKTOK OFICIAL</span><h3>Seu vídeo, no horário certo.</h3><p>O OmniX usa a Content Posting API e confirma o resultado após o processamento.</p></div></article></section>
         </div>
@@ -293,6 +338,7 @@ export default function Dashboard() {
         <div className="connection"><span className="network-logo tiktok"><Video size={22} /></span><div><strong>TikTok</strong><small>{tiktokAccount ? `${tiktokAccount.display_name} · Conectado pela API oficial` : "Nenhuma conta conectada"}</small></div><button className={tiktokAccount ? "disconnect" : "primary"} onClick={tiktokAccount ? disconnectTikTok : connectTikTok} disabled={connectionLoading}>{connectionLoading ? <LoaderCircle className="spin" size={16} /> : tiktokAccount ? "Desconectar" : "Conectar"}</button></div>
         {(["Instagram", "YouTube"] as Network[]).map(network => <div className="connection unavailable" key={network}><span className={`network-logo ${network.toLowerCase()}`}><NetworkIcon network={network} size={22} /></span><div><strong>{network}</strong><small>Integração planejada para uma próxima etapa</small></div><span className="soon">Em breve</span></div>)}
       </div><p className="demo-note"><CircleHelp size={16} /> O OmniX nunca pede sua senha do TikTok. A autorização acontece no site oficial e pode ser revogada a qualquer momento.</p></div></div>}
+      {previewPost && <div className="modal-backdrop" role="presentation" onMouseDown={() => setPreviewPost(null)}><div className="modal preview-modal" role="dialog" aria-modal="true" aria-labelledby="preview-title" onMouseDown={event => event.stopPropagation()}><div className="modal-head"><div><span className="mini-label">DETALHES DO POST</span><h2 id="preview-title">{previewPost.title}</h2><p>{previewDetails?.accountName || "Carregando conta..."}</p></div><button onClick={() => setPreviewPost(null)} aria-label="Fechar"><X /></button></div>{previewLoading ? <div className="preview-loading"><LoaderCircle className="spin" /><span>Carregando preview...</span></div> : previewDetails && <div className="preview-content"><div className="video-preview">{previewDetails.videoUrl ? <video src={previewDetails.videoUrl} controls preload="metadata" /> : <div className="video-unavailable"><Video /><span>Preview indisponível</span></div>}</div><div className="preview-summary"><div className={`preview-status status-${previewPost.status.toLowerCase()}`}><span />{previewPost.status}</div><dl><div><dt>Conta</dt><dd>{previewDetails.accountName}</dd></div><div><dt>Agendado para</dt><dd>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(previewPost.scheduledAt))}</dd></div>{previewDetails.publishedAt && <div><dt>Publicado em</dt><dd>{new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(previewDetails.publishedAt))}</dd></div>}<div><dt>Privacidade</dt><dd>{privacyLabels[previewDetails.privacy] || previewDetails.privacy || "Não informada"}</dd></div><div><dt>Arquivo</dt><dd>{previewDetails.originalName}</dd></div>{previewDetails.duration !== null && <div><dt>Vídeo</dt><dd>{Math.round(previewDetails.duration)}s{previewDetails.width && previewDetails.height ? ` · ${previewDetails.width}×${previewDetails.height}` : ""}</dd></div>}</dl></div><section className="preview-caption"><span>LEGENDA</span><p>{previewDetails.caption || "Sem legenda"}</p></section>{previewDetails.errorMessage && <section className="preview-error"><strong>Falha na publicação{previewDetails.errorCode ? ` · ${previewDetails.errorCode}` : ""}</strong><p>{previewDetails.errorMessage}</p></section>}</div>}</div></div>}
       {toast && <div className="toast"><Check size={18} /> {toast}</div>}
     </main>
   );
